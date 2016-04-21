@@ -1,0 +1,78 @@
+{
+  "system": {
+    "updatechecker": false,
+    "datadirectory": "\/var\/www\/html\/owncloud\/data",
+    "apps_paths": {
+      "0": {
+        "path": "/var/www/html/owncloud/apps",
+        "url": "/apps",
+        "writable": true
+      },
+      "1": {
+        "path": "/var/www/html/owncloud/apps_all",
+        "url": "/apps_all",
+        "writable": true
+      }
+    },
+    "adminlogin": "css_admin",
+    "adminpass": "jN$43eraA!",
+    "defaultapp": "calendar",
+    "theme": "css"
+  },
+  "apps": {
+    "calendar": {
+      "enabled": "yes"
+    },
+    "activity": {
+      "enabled": "no"
+    },
+    "gallery": {
+      "enabled": "no"
+    },
+    "files": {
+      "enabled": "no"
+    },
+    "firstrunwizard": {
+      "enabled": "no"
+    },
+    "dav": {
+      "enabled": "no"
+    },
+    "federatedfilesharing": {
+      "enabled": "no"
+    },
+    "federation": {
+      "enabled": "no"
+    },
+    "files_pdfviewer": {
+      "enabled": "no"
+    },
+    "files_sharing": {
+      "enabled": "no"
+    },
+    "files_texteditor": {
+      "enabled": "no"
+    },
+    "files_trashbin": {
+      "enabled": "no"
+    },
+    "files_versions": {
+      "enabled": "no"
+    },
+    "files_videoplayer": {
+      "enabled": "no"
+    },
+    "user_saml": {
+      "enabled": "yes",
+      "installed_version": "0.4",
+      "saml_autocreate": "on",
+      "saml_displayname_mapping": "firstName",
+      "saml_email_mapping": "email",
+      "saml_force_saml_login": "on",
+      "saml_ssp_path": "/var/simplesaml",
+      "saml_update_user_data": "on",
+      "saml_username_mapping": "email",
+      "types": "prelogin,authentication"
+    }
+  }
+}

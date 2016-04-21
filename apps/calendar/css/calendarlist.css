@@ -1,0 +1,284 @@
+/**
+ * ownCloud - Calendar App
+ *
+ * @author Raghu Nayyar
+ * @author Georg Ehrke
+ * @copyright 2016 Raghu Nayyar <beingminimal@gmail.com>
+ * @copyright 2016 Georg Ehrke <oc.list@georgehrke.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+
+#app-navigation .calendar-list {
+	max-height: 400px;
+}
+#app-navigation .app-navigation-input {
+	width: 95%;
+}
+#app-navigation .calendarlist-fieldset {
+	padding: 0 5px;
+}
+#app-navigation .color-button {
+	height: 25px;
+	border: 0;
+}
+#app-navigation .close-button {
+	height: 30px;
+	width: 30px;
+	padding: 0;
+	position: relative;
+}
+#app-navigation .accept-button {
+	width: 100%;
+	padding: 8px;
+}
+#app-navigation .loading {
+	margin-left: 5px;
+	height: 30px;
+	width: 92%;
+	background-size: 20px;
+}
+#app-navigation .new-entity,
+#app-navigation .subscription-title {
+	display: block;
+	width: 100%;
+	line-height: 44px;
+	padding: 0 44px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	color: #4d4d4d;
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+}
+#app-navigation .new-entity,
+#app-navigation .new-entity .new-entity-title {
+	cursor: pointer;
+}
+#app-navigation .new-entity .new-entity-title:before {
+	left: 18px;
+	position: absolute;
+	font-size: 150%;
+	content: '+';
+}
+#app-navigation .new-entity:hover {
+	color:#000;
+}
+#app-navigation .add-new .new-accept-button {
+	position: relative;
+}
+#app-navigation .add-new .color-button {
+	height: 25px;
+	border: 0;
+	background: #1a1a1a;
+}
+
+.add-new-subscription .calendarlist-fieldset input {
+	width: 130px;
+	margin-right: 2px;
+
+}
+
+.add-new-subscription .calendarlist-fieldset select {
+	width: 80px;
+}
+
+#app-navigation .app-navigation-list-item .calendarCheckbox {
+	position: absolute;
+	margin-left: 17px;
+	margin-top: 16px;
+	width: 12px;
+	height: 12px;
+	border: none;
+	border-radius: 50%;
+	cursor: pointer;
+}
+#app-navigation .app-navigation-list-item .calendarCheckbox.unchecked {
+	background: transparent !important;
+}
+#app-navigation .app-navigation-list-item .loading {
+	position: absolute;
+	margin-left: 17px;
+	margin-top: 16px;
+	width: 12px;
+	height: 12px;
+	background-size: 12px;
+}
+#app-navigation .app-navigation-list-item .utils {
+	height: 44px;
+	padding: 0 5px 0 0;
+}
+#app-navigation .app-navigation-list-item .utils .action span {
+	opacity: .3;
+}
+#app-navigation .app-navigation-list-item .utils .action:hover span {
+	opacity: 1;
+}
+#app-navigation .app-navigation-list-item .active {
+	background: transparent !important;
+	/* Core Override */
+}
+#app-navigation .app-navigation-list-item .active a {
+	background-color: transparent !important;
+	/* Core Override */
+}
+#app-navigation .app-navigation-list-item .active:hover .calendarlist-icon {
+	background-color: transparent !important;
+	/* Core Override */
+}
+#app-navigation .app-navigation-list-item > a {
+	padding: 0 66px 0 44px !important;
+}
+#app-navigation .app-navigation-list-item .editfieldset {
+	padding: 0 4px;
+}
+#app-navigation .app-navigation-list-item .editfieldset .calendartype {
+	width: 100%;
+}
+#app-navigation .buttongroups .accept-button {
+	width: 47%;
+	padding: 17px;
+	margin-right: 7px;
+}
+#app-navigation .editfieldset .close-button {
+	width: 47%;
+	padding: 17px;
+}
+#app-navigation .app-navigation-list-item .caldavURL input {
+	width: 75%;
+}
+#app-navigation .app-navigation-list-item .utils {
+	display: inline-block;
+}
+#app-navigation .app-navigation-list-item .utils .action span {
+	display: inline-block;
+	line-height: 44px;
+	height: 16px;
+	width: 16px;
+	padding: 12px 6px 12px 6px;
+	cursor: pointer;
+}
+
+#app-navigation .app-navigation-list-item:hover .calendar-share-list .utils .action span {
+	padding: 0;
+}
+
+#app-navigation .app-navigation-list-item:hover .utils.active {
+  display: inline-block;
+}
+#app-navigation .app-navigation-list-item:hover .utils > a {
+	background-color: transparent !important;
+}
+#app-navigation > ul {
+  height: auto;
+}
+
+/* ColorPicker overrides. */
+.colorpicker {
+  display: block;
+  height: 30px;
+}
+.colorpicker .colorpicker-list {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.colorpicker .colorpicker-list li {
+  height: 100%;
+  width: 29px !important;
+  float: left;
+}
+.colorpicker .colorpicker-list li.selected {
+  border: 1px solid #333;
+}
+
+/*scroll issues */
+#scrollable {
+  height: 80%;
+}
+
+/* Spacing */
+#spacer {
+  height: 44px;
+}
+
+/* Calendar Sharing */
+input.shareeInput {
+	width: 89%;
+	margin: 6px;
+}
+
+li.calendar-share-item {
+	margin-left: 12px;
+	width: 95% !important;
+}
+ul.dropdown-menu {
+	height: 100px;
+    overflow: scroll;
+    border: 1px #ddd solid;
+    border-radius: 0 0 3px 3px;
+	margin-top: -7px;
+    margin-left: 6px;
+    width: 94%;
+}
+ul.dropdown-menu  li {
+	height: 25px;
+}
+
+#app-navigation ul.dropdown-menu a {
+	min-height: 22px;
+	max-height: 22px;
+	padding: 0 10px;
+	line-height: 2;
+}
+
+ul.dropdown-menu li > a:hover {
+	background-color: grey !important;
+}
+
+
+/* Fullcalendar modifications */
+
+.fc th,
+.fc .fc-axis,
+.fc-day-grid-event .fc-time,
+.fc-ltr .fc-basic-view .fc-day-number,
+.fc-time-grid-event .fc-time {
+	opacity: .4;
+	font-size: 80%;
+	font-weight: normal;
+}
+.fc-day-number.fc-other-month {
+	opacity: .1 !important;
+}
+
+.fc td.fc-widget-header {
+	border-top: none;
+}
+.fc th, .fc td {
+	border-left: none;
+	border-bottom: none;
+}
+.fc-unthemed th, .fc-unthemed td, .fc-unthemed thead, .fc-unthemed tbody, .fc-unthemed .fc-divider, .fc-unthemed .fc-row, .fc-unthemed .fc-popover {
+	border-color: #f8f8f8;
+}
+
+/* properly size events */
+.fc-event {
+	font-size: 13px;
+	line-height: initial;
+	padding-left: 3px;
+}

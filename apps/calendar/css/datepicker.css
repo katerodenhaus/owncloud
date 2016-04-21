@@ -1,0 +1,177 @@
+/**
+ * ownCloud - Calendar App
+ *
+ * @author Raghu Nayyar
+ * @author Georg Ehrke
+ * @copyright 2016 Raghu Nayyar <beingminimal@gmail.com>
+ * @copyright 2016 Georg Ehrke <oc.list@georgehrke.com>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+
+
+#datepicker .datepicker_current,
+#app-navigation .togglebuttons,
+#app-navigation .togglebuttons .btn-group {
+	float: left;
+}
+
+#app-navigation .togglebuttons .button.active {
+	background-color: rgba(255, 255, 255, .95);
+	color: #111;
+}
+
+#app-navigation .togglebuttons .button.today {
+	float: right;
+}
+
+#app-navigation .togglebuttons .button.today:focus {
+	background-color: rgba(240,240,240,.9);
+}
+
+#datepicker .pickerbody-hide {
+	display: none;
+}
+
+#datepicker .datepicker_left, #datepicker .datepicker_right {
+	height: 34px;
+	width: 35px;
+	margin: 5px 0 0;
+	font-weight: normal;
+}
+
+#datepicker table {
+	display: inline-block;
+	margin-left: 5px;
+}
+
+#datepicker table td button {
+	margin: 0;
+	font-weight: 300;
+}
+
+#datepicker thead {
+	display: none;
+}
+
+.datepicker-heading {
+	margin: 0 5px;
+}
+
+.datepicker-heading .btn-arrow {
+	padding-bottom: 9px;
+	padding-top: 10px;
+	padding-left: 2px;
+	margin-right:0;
+}
+
+.datepicker-heading .btn-date {
+	width: 180px;
+	height: 36px;
+	margin-left:4px;
+}
+
+#datepicker table thead tr {
+	width: 100%;
+}
+
+#datepicker table thead .text-center {
+	text-align: center;
+}
+
+#datepicker table tbody tr,
+#datepicker table tbody tr:hover {
+	background: transparent;
+}
+
+#datepicker table tbody button {
+	margin: 0;
+	padding: 6px 9px;
+	background: transparent;
+	cursor: pointer;
+	border-radius: 0;
+	border-top: 0;
+	border-left: 0;
+}
+#datepicker table tbody tr.uib-weeks td:last-child button {
+	border-right: none;
+}
+#datepicker table tbody tr.uib-weeks:last-child td button {
+	border-bottom: none;
+}
+
+#datepicker table tbody button.active {
+	background-color: rgba(240,240,240,.9);
+}
+
+#datepicker table tbody button span {
+	cursor:pointer;
+}
+
+#datepicker .text-muted {
+	color: #aaa;
+}
+
+#app-navigation {
+	padding-bottom: 0;
+}
+#app-navigation .togglebuttons {
+	width: 100%;
+	height: 44px;
+}
+#app-navigation .togglebuttons .button {
+	font-weight: normal;
+	padding: 8px;
+}
+#app-navigation .togglebuttons .button.first {
+	margin-left: 5px;
+	-webkit-border-radius: 3px 0 0 3px;
+	-ms-border-radius: 3px 0 0 3px;
+	border-radius: 3px 0 0 3px;
+}
+#app-navigation .togglebuttons .button.middle {
+	margin-left: -7px;
+	-webkit-border-radius: 0px;
+	-moz-border-radius: 0px;
+	-ms-border-radius: 0px;
+	border-radius: 0px;
+}
+#app-navigation .togglebuttons .button.last {
+	margin-left: -8px;
+	-webkit-border-radius: 0 3px 3px 0;
+	-moz-border-radius: 0 3px 3px 0;
+	-ms-border-radius: 0 3px 3px 0;
+	border-radius: 0 3px 3px 0;
+}
+#app-navigation .togglebuttons .button.today {
+	margin-right: 5px;
+}
+
+
+/* Overrides */
+
+.glyphicon-chevron-left {
+	background: url("../img/leftarrow.svg") center center no-repeat;
+}
+
+.glyphicon-chevron-right {
+	background: url("../img/rightarrow.svg") center center no-repeat;
+}
+
+.glyphicon {
+	display: block;
+	height: 15px;
+}
