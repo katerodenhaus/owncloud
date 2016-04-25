@@ -42,6 +42,12 @@ class DefaultTokenProvider implements IProvider {
 	/** @var ILogger $logger */
 	private $logger;
 
+	/**
+	 * @param DefaultTokenMapper $mapper
+	 * @param ICrypto $crypto
+	 * @param IConfig $config
+	 * @param ILogger $logger
+	 */
 	public function __construct(DefaultTokenMapper $mapper, ICrypto $crypto,
 		IConfig $config, ILogger $logger) {
 		$this->mapper = $mapper;
@@ -65,14 +71,28 @@ class DefaultTokenProvider implements IProvider {
 		$dbToken->setPassword($this->crypto->encrypt($password . $secret));
 		$dbToken->setName($name);
 		$dbToken->setToken($this->hashToken($token));
+		$dbToken->setLastActivity(time());
 
 		$this->mapper->insert($dbToken);
 
 		return $dbToken;
 	}
 
+	/**
+	 * Invalidate (delete) the given session token
+	 *
+	 * @param string $token
+	 */
 	public function invalidateToken($token) {
 		$this->mapper->invalidate($this->hashToken($token));
+	}
+
+	/**
+	 * Invalidate (delete) old session tokens
+	 */
+	public function invalidateOldTokens() {
+		$olderThan = time() - (int)$this->config->getSystemValue('session_lifetime', 60 * 60 * 24);
+		$this->mapper->invalidateOld($olderThan);
 	}
 
 	/**

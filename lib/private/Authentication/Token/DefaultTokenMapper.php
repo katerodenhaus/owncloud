@@ -24,11 +24,11 @@ namespace OC\Authentication\Token;
 
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Mapper;
-use OCP\IDBConnection;
+use OCP\IDb;
 
 class DefaultTokenMapper extends Mapper {
 
-	public function __construct(IDBConnection $db) {
+	public function __construct(IDb $db) {
 		parent::__construct($db, 'authtoken');
 	}
 
@@ -42,6 +42,17 @@ class DefaultTokenMapper extends Mapper {
 			. 'WHERE `token` = ?';
 		return $this->execute($sql, [
 				$token
+		]);
+	}
+
+	/**
+	 * @param int $olderThan
+	 */
+	public function invalidateOld($olderThan) {
+		$sql = 'DELETE FROM `' . $this->getTableName() . '` '
+			. 'WHERE `last_activity` < ?';
+		$this->execute($sql, [
+			$olderThan
 		]);
 	}
 

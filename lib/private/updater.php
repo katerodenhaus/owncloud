@@ -235,6 +235,7 @@ class Updater extends BasicEmitter {
 		try {
 			Setup::updateHtaccess();
 			Setup::protectDataDirectory();
+			Setup::installBackgroundJobs();
 		} catch (\Exception $e) {
 			throw new \Exception($e->getMessage());
 		}

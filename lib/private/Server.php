@@ -210,7 +210,7 @@ class Server extends ServerContainer implements IServerContainer {
 		});
 		$this->registerService('DefaultTokenMapper', function (Server $c) {
 			$dbConnection = $c->getDatabaseConnection();
-			return new Authentication\Token\DefaultTokenMapper($dbConnection);
+			return new Authentication\Token\DefaultTokenMapper(new Db($dbConnection));
 		});
 		$this->registerService('DefaultTokenProvider', function (Server $c) {
 			$mapper = $c->query('DefaultTokenMapper');
