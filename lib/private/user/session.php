@@ -300,7 +300,14 @@ class Session implements IUserSession, Emitter {
 		//$this->manager->emit('\OC\User', 'postTokenLogin', array($user));
 		return true;
 	}
-	
+
+	/**
+	 * Create a new session token for the given user credentials
+	 *
+	 * @param string $uid user UID
+	 * @param string $password
+	 * @return boolean
+	 */
 	public function createSessionToken($uid, $password) {
 		if (is_null($this->manager->get($uid))) {
 			// User does not exist

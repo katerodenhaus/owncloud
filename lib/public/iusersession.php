@@ -39,7 +39,6 @@ namespace OCP;
  * @since 6.0.0
  */
 interface IUserSession {
-
 	/**
 	 * Do a user login
 	 * @param string $user the username

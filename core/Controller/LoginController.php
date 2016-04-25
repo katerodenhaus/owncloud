@@ -165,25 +165,25 @@ class LoginController extends Controller {
 	 *
 	 * @param string $user
 	 * @param string $password
+	 * @param string $redirect_url
 	 * @return RedirectResponse
 	 */
-	public function tryLogin($user, $password) {
+	public function tryLogin($user, $password, $redirect_url) {
 		// TODO: Add all the insane error handling
 		if ($this->userManager->checkPassword($user, $password) === false) {
 			return new RedirectResponse($this->urlGenerator->linkToRoute('login#showLoginForm'));
 		}
 		$this->userSession->createSessionToken($user, $password);
-		if (isset($_REQUEST['redirect_url']) && OC_User::isLoggedIn()) {
-			$location = OC::$server->getURLGenerator()->getAbsoluteURL(urldecode($_REQUEST['redirect_url']));
+		if (!is_null($redirect_url) && $this->userSession->isLoggedIn()) {
+			$location = OC::$server->getURLGenerator()->getAbsoluteURL(urldecode($redirect_url));
 			// Deny the redirect if the URL contains a @
 			// This prevents unvalidated redirects like ?redirect_url=:user@domain.com
 			if (strpos($location, '@') === false) {
-				header('Location: ' . $location);
-				return;
+				return new RedirectResponse($location);
 			}
 		}
-		return new RedirectResponse($this->urlGenerator->linkTo('files', 'index'));
 		// TODO: Show invalid login warning
+		return new RedirectResponse($this->urlGenerator->linkTo('files', 'index'));
 	}
 
 }

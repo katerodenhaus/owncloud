@@ -22,7 +22,6 @@
 
 namespace OC\Authentication\Token;
 
-use OC;
 use OC\Authentication\Exceptions\InvalidTokenException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;

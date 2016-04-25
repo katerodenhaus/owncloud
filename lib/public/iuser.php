@@ -170,7 +170,7 @@ interface IUser {
 	 * @since 9.0.0
 	 */
 	public function getCloudId();
-	
+
 	/**
 	 * set the email address of the user
 	 *
