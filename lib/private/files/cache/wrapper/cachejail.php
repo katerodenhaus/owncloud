@@ -295,6 +295,6 @@ class CacheJail extends CacheWrapper {
 		if ($sourceCache === $this) {
 			return $this->move($sourcePath, $targetPath);
 		}
-		return $this->cache->moveFromCache($sourceCache, $sourcePath, $targetPath);
+		return $this->cache->moveFromCache($sourceCache, $sourcePath, $this->getSourcePath($targetPath));
 	}
 }
