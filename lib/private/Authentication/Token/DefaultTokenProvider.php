@@ -64,11 +64,15 @@ class DefaultTokenProvider implements IProvider {
 		$secret = $this->config->getSystemValue('secret');
 		$dbToken->setPassword($this->crypto->encrypt($password . $secret));
 		$dbToken->setName($name);
-		$dbToken->setToken(hash('sha512', $token));
+		$dbToken->setToken($this->hashToken($token));
 
 		$this->mapper->insert($dbToken);
 
 		return $dbToken;
+	}
+
+	public function invalidateToken($token) {
+		$this->mapper->invalidate($this->hashToken($token));
 	}
 
 	/**
@@ -79,13 +83,21 @@ class DefaultTokenProvider implements IProvider {
 	public function validateToken($token) {
 		$this->logger->debug('validating default token <' . $token . '>');
 		try {
-			$dbToken = $this->mapper->getTokenUser(hash('sha512', $token));
+			$dbToken = $this->mapper->getTokenUser($this->hashToken($token));
 			$this->logger->debug('valid token for ' . $dbToken->getUid());
 			return $dbToken->getUid();
 		} catch (DoesNotExistException $ex) {
 			$this->logger->warning('invalid token');
 			throw new InvalidTokenException();
 		}
+	}
+
+	/**
+	 * @param string $token
+	 * @return string
+	 */
+	private function hashToken($token) {
+		return hash('sha512', $token);
 	}
 
 }
