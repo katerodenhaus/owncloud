@@ -22,26 +22,32 @@
 
 namespace OC\Authentication\Token;
 
+use OC;
 use OC\Authentication\Exceptions\InvalidTokenException;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IConfig;
 use OCP\ILogger;
-use OCP\Security\IHasher;
+use OCP\Security\ICrypto;
 
 class DefaultTokenProvider implements IProvider {
 
 	/** @var DefaultTokenMapper */
 	private $mapper;
 
-	/** @var IHasher */
-	private $hasher;
+	/** @var ICrypto */
+	private $crypto;
+
+	/** @var IConfig */
+	private $config;
 
 	/** @var ILogger $logger */
 	private $logger;
 
-	public function __construct(DefaultTokenMapper $mapper, IHasher $hasher,
-		ILogger $logger) {
+	public function __construct(DefaultTokenMapper $mapper, ICrypto $crypto,
+		IConfig $config, ILogger $logger) {
 		$this->mapper = $mapper;
-		$this->hasher = $hasher;
+		$this->crypto = $crypto;
+		$this->config = $config;
 		$this->logger = $logger;
 	}
 
@@ -56,10 +62,10 @@ class DefaultTokenProvider implements IProvider {
 	public function generateToken($token, $uid, $password, $name) {
 		$dbToken = new DefaultToken();
 		$dbToken->setUid($uid);
-		// TODO: encrypt
-		$dbToken->setPassword($password);
+		$secret = $this->config->getSystemValue('secret');
+		$dbToken->setPassword($this->crypto->encrypt($password . $secret));
 		$dbToken->setName($name);
-		$dbToken->setToken($this->hasher->hash($token));
+		$dbToken->setToken(hash('sha512', $token));
 
 		$this->mapper->insert($dbToken);
 
@@ -74,7 +80,7 @@ class DefaultTokenProvider implements IProvider {
 	public function validateToken($token) {
 		$this->logger->debug('validating default token <' . $token . '>');
 		try {
-			$dbToken = $this->mapper->getTokenUser($this->hasher->hash($token));
+			$dbToken = $this->mapper->getTokenUser(hash('sha512', $token));
 			$this->logger->debug('valid token for ' . $dbToken->getUid());
 			return $dbToken->getUid();
 		} catch (DoesNotExistException $ex) {

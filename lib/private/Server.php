@@ -214,9 +214,10 @@ class Server extends ServerContainer implements IServerContainer {
 		});
 		$this->registerService('DefaultTokenProvider', function (Server $c) {
 			$mapper = $c->query('DefaultTokenMapper');
-			$hasher = $c->getHasher();
+			$crypto = $c->getCrypto();
+			$config = $c->getConfig();
 			$logger = $c->getLogger();
-			return new \OC\Authentication\Token\DefaultTokenProvider($mapper, $hasher, $logger);
+			return new \OC\Authentication\Token\DefaultTokenProvider($mapper, $crypto, $config, $logger);
 		});
 		$this->registerService('UserSession', function (Server $c) {
 			$manager = $c->getUserManager();
