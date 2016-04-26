@@ -1097,6 +1097,14 @@
 				</field>
 			</index>
 
+			<index>
+				<name>authtoken_last_activity_index</name>
+				<field>
+					<name>last_activity</name>
+					<sorting>ascending</sorting>
+				</field>
+			</index>
+
 		</declaration>
 	</table>
 
