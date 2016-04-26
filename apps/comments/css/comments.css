@@ -36,6 +36,7 @@
 	z-index: 1;
 }
 
+#activityTabView li.comment.collapsed .activitymessage,
 #commentsTabView .comment.collapsed .message {
 	white-space: -moz-pre-wrap !important;  /* Mozilla, since 1999 */
 	white-space: -webkit-pre-wrap; /*Chrome & Safari */ 
@@ -47,15 +48,18 @@
 	white-space: normal;
 }
 
+#activityTabView li.comment.collapsed .activitymessage,
 #commentsTabView .comment.collapsed .message {
 	max-height: 70px;
 	overflow: hidden;
 }
 
+#activityTabView li.comment .message-overlay,
 #commentsTabView .comment .message-overlay {
 	display: none;
 }
 
+#activityTabView li.comment.collapsed .message-overlay,
 #commentsTabView .comment.collapsed .message-overlay {
 	display: block;
     position: absolute;
