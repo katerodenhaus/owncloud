@@ -59,7 +59,7 @@ class UsersController extends Controller {
 	private $isAdmin;
 	/** @var IUserManager */
 	private $userManager;
-	/** @var IGroupManager */
+	/** @var \OC\Group\Manager */
 	private $groupManager;
 	/** @var IConfig */
 	private $config;
@@ -497,7 +497,6 @@ class UsersController extends Controller {
 	 * @NoAdminRequired
 	 * @NoSubadminRequired
 	 *
-	 * @param string $userId
 	 * @param string $avatarScope
 	 * @param string $displayname
 	 * @param string $displaynameScope
@@ -511,77 +510,16 @@ class UsersController extends Controller {
 	 * @param string $addressScope
 	 * @return DataResponse
 	 */
-	public function saveUserSettings($userId, $avatarScope,
-					$displayname, $displaynameScope,
-					$phone, $phoneScope,
-					$email, $emailScope,
-					$website, $websiteScope,
-					$address, $addressScope) {
+	public function setUserSettings($avatarScope,
+									 $displayname, $displaynameScope,
+									 $phone, $phoneScope,
+									 $email, $emailScope,
+									 $website, $websiteScope,
+									 $address, $addressScope
+	) {
 
-		if($userId === null) {
-			$userId = $this->userSession->getUser()->getUID();
-		}
 
-		$data = [
-			'avatar' =>  ['scope' => $avatarScope],
-			'displayName' => ['value' => $displayname, 'scope' => $displaynameScope],
-			'email' => [['value' => $email, 'scope' => $emailScope]],
-			'website' => [['value' => $website, 'scope' => $websiteScope]],
-			'address' => [['value' => $address, 'scope' => $addressScope]],
-			'phone' => [['value' => $phone, 'scope' => $phoneScope]]
-		];
-		
-		$this->accountManager->updateUser($userId, $data);
-
-		return new DataResponse(
-			array(
-				'status' => 'success',
-				'data' => array(
-					'userId' => $userId,
-					'avatarScope' => $avatarScope,
-					'displayname' => $displayname,
-					'displaynameScope' => 'public', // force value for test purposes
-					'email' => $email,
-					'emailScope' => $emailScope,
-					'website' => $website,
-					'websiteScope' => $websiteScope,
-					'address' => $address,
-					'addressScope' => $addressScope,
-					'message' => (string)$this->l10n->t('Settings saved')
-				)
-			),
-			Http::STATUS_OK
-		);
-	}
-
-	/**
-	 * Set the mail address of a user
-	 *
-	 * @todo Merge into saveUserSettings
-	 *
-	 * @param string $id
-	 * @param string $mailAddress
-	 * @return DataResponse
-	 */
-	private function setMailAddress($id, $mailAddress) {
-		$userId = $this->userSession->getUser()->getUID();
-		$user = $this->userManager->get($id);
-
-		if($userId !== $id
-			&& !$this->isAdmin
-			&& !$this->groupManager->getSubAdmin()->isUserAccessible($this->userSession->getUser(), $user)) {
-			return new DataResponse(
-				array(
-					'status' => 'error',
-					'data' => array(
-						'message' => (string)$this->l10n->t('Forbidden')
-					)
-				),
-				Http::STATUS_FORBIDDEN
-			);
-		}
-
-		if($mailAddress !== '' && !$this->mailer->validateMailAddress($mailAddress)) {
+		if(!$this->mailer->validateMailAddress($email)) {
 			return new DataResponse(
 				array(
 					'status' => 'error',
@@ -593,46 +531,69 @@ class UsersController extends Controller {
 			);
 		}
 
-		if(!$user){
+		$userId = $this->userSession->getUser()->getUID();
+
+		$data = [
+			'avatar' =>  ['scope' => $avatarScope],
+			'displayName' => ['value' => $displayname, 'scope' => $displaynameScope],
+			'email' => [['value' => $email, 'scope' => $emailScope]],
+			'website' => [['value' => $website, 'scope' => $websiteScope]],
+			'address' => [['value' => $address, 'scope' => $addressScope]],
+			'phone' => [['value' => $phone, 'scope' => $phoneScope]]
+		];
+
+
+		if($this->saveUserSettings($userId, $data)) {
 			return new DataResponse(
 				array(
-					'status' => 'error',
+					'status' => 'success',
 					'data' => array(
-						'message' => (string)$this->l10n->t('Invalid user')
+						'userId' => $userId,
+						'avatarScope' => $avatarScope,
+						'displayname' => $displayname,
+						'displaynameScope' => $displaynameScope,
+						'email' => $email,
+						'emailScope' => $emailScope,
+						'website' => $website,
+						'websiteScope' => $websiteScope,
+						'address' => $address,
+						'addressScope' => $addressScope,
+						'message' => (string)$this->l10n->t('Settings saved')
 					)
 				),
-				Http::STATUS_UNPROCESSABLE_ENTITY
+				Http::STATUS_OK
 			);
+		} else {
+			return new DataResponse([
+				'status' => 'error',
+				'data' => [
+					'message' => $this->l10n->t('Unable to change full name')
+				],
+			]);
 		}
 
-		// this is the only permission a backend provides and is also used
-		// for the permission of setting a email address
-		if(!$user->canChangeDisplayName()){
-			return new DataResponse(
-				array(
-					'status' => 'error',
-					'data' => array(
-						'message' => (string)$this->l10n->t('Unable to change mail address')
-					)
-				),
-				Http::STATUS_FORBIDDEN
-			);
+	}
+
+
+	/**
+	 * update account manager with new user data
+	 *
+	 * @param string $userId
+	 * @param array $data
+	 * @return bool
+	 */
+	private function saveUserSettings($userId, $data) {
+		$user = $this->userManager->get($userId);
+		$result = true;
+		if ($user->getDisplayName() !== $data['displayName']['value']) {
+			$result = $user->setDisplayName($data['displayName']['value']);
 		}
 
-		// delete user value if email address is empty
-		$user->setEMailAddress($mailAddress);
+		if ($result) {
+			$this->accountManager->updateUser($userId, $data);
+		}
 
-		return new DataResponse(
-			array(
-				'status' => 'success',
-				'data' => array(
-					'username' => $id,
-					'mailAddress' => $mailAddress,
-					'message' => (string)$this->l10n->t('Email saved')
-				)
-			),
-			Http::STATUS_OK
-		);
+		return $result;
 	}
 
 	/**
@@ -674,30 +635,23 @@ class UsersController extends Controller {
 
 
 	/**
-	 * Set the displayName of a user
-	 *
-	 * @todo merge into saveUserSettings
+	 * Allow Admin to set the displayName of a user
 	 *
 	 * @param string $username
 	 * @param string $displayName
 	 * @return DataResponse
 	 */
-	private function setDisplayName($username, $displayName) {
+	public function setDisplayName($username, $displayName) {
 		$currentUser = $this->userSession->getUser();
-
-		if ($username === null) {
-			$username = $currentUser->getUID();
-		}
-
 		$user = $this->userManager->get($username);
-
+		
 		if ($user === null ||
 			!$user->canChangeDisplayName() ||
 			(
 				!$this->groupManager->isAdmin($currentUser->getUID()) &&
-				!$this->groupManager->getSubAdmin()->isUserAccessible($currentUser, $user) &&
-				$currentUser !== $user)
-			) {
+				!$this->groupManager->getSubAdmin()->isUserAccessible($currentUser, $user)
+			)
+		) {
 			return new DataResponse([
 				'status' => 'error',
 				'data' => [
@@ -706,7 +660,11 @@ class UsersController extends Controller {
 			]);
 		}
 
-		if ($user->setDisplayName($displayName)) {
+		$userData = $this->accountManager->getUser($user->getUID());
+		$userData['displayName']['value'] = $displayName;
+		
+		
+		if ($this->saveUserSettings($username, $userData)) {
 			return new DataResponse([
 				'status' => 'success',
 				'data' => [
