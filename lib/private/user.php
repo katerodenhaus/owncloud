@@ -70,7 +70,7 @@ class OC_User {
 
 	private static $_setupedBackends = array();
 
-	// bool, stores if a user want to access a resource anonymously, e.g if he opens a public link
+	// bool, stores if a user want to access a resource anonymously, e.g if they open a public link
 	private static $incognitoMode = false;
 
 	/**
@@ -280,11 +280,7 @@ class OC_User {
 	 * @return bool
 	 */
 	public static function isLoggedIn() {
-		if (\OC::$server->getSession()->get('user_id') !== null && self::$incognitoMode === false) {
-			return self::userExists(\OC::$server->getSession()->get('user_id'));
-		}
-
-		return false;
+		return \OC::$server->getUserSession()->isLoggedIn();
 	}
 
 	/**
