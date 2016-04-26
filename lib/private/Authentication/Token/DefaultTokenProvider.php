@@ -77,6 +77,17 @@ class DefaultTokenProvider implements IProvider {
 	}
 
 	/**
+	 * Update token activity timestamp
+	 *
+	 * @param DefaultToken $token
+	 */
+	public function updateToken(DefaultToken $token) {
+		$token->setLastActivity(time());
+
+		$this->mapper->update($token);
+	}
+
+	/**
 	 * @param string $token
 	 * @throws InvalidTokenException
 	 */

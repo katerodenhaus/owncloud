@@ -214,6 +214,10 @@ class Session implements IUserSession, Emitter {
 			$this->logout();
 			return false;
 		}
+
+		// Session is valid, so the token can be refreshed
+		$this->tokenProvider->updateToken($token);
+
 		return true;
 	}
 
