@@ -28,12 +28,9 @@ use OC\BackgroundJob\Job;
 class DefaultTokenCleanupJob extends Job {
 
 	protected function run($argument) {
-		$logger = OC::$server->getLogger();
 		/* @var $provider DefaultTokenProvider */
-		$provider = OC::$server->query('\OC\Authentication\Token\DefaultTokenProvider');
-
-		$logger->info("invalidating old session tokens");
-		//$provider->invalidateOldTokens();
+		$provider = OC::$server->query('OC\Authentication\Token\DefaultTokenProvider');
+		$provider->invalidateOldTokens();
 	}
 
 }

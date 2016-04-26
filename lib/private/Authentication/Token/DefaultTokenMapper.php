@@ -24,11 +24,11 @@ namespace OC\Authentication\Token;
 
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Mapper;
-use OCP\IDb;
+use OCP\IDBConnection;
 
 class DefaultTokenMapper extends Mapper {
 
-	public function __construct(IDb $db) {
+	public function __construct(IDBConnection $db) {
 		parent::__construct($db, 'authtoken');
 	}
 

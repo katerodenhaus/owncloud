@@ -57,7 +57,7 @@ class DefaultToken extends Entity implements IToken {
 	 * @return string
 	 */
 	public function getId() {
-		return $token;
+		return $this->token;
 	}
 
 }
