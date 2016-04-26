@@ -207,12 +207,16 @@ class Session implements IUserSession, Emitter {
 		}
 
 		// Check whether login credentials are still valid
-		// TODO: don't do that on every request
-		$pwd = $this->tokenProvider->getPassword($token, $sessionId);
-		if ($this->manager->checkPassword($uid, $pwd) === false) {
-			// Password has changed -> log user out
-			$this->logout();
-			return false;
+		// This check is performed each 5 minutes
+		$lastCheck = $this->session->get('last_login_check') ? : 0;
+		if ($lastCheck < (time() - 60 * 5)) {
+			$pwd = $this->tokenProvider->getPassword($token, $sessionId);
+			if ($this->manager->checkPassword($uid, $pwd) === false) {
+				// Password has changed -> log user out
+				$this->logout();
+				return false;
+			}
+			$this->session->set('last_login_check', time());
 		}
 
 		// Session is valid, so the token can be refreshed
