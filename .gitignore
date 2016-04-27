@@ -121,3 +121,9 @@ Vagrantfile
 /config/config-autotest-backup.php
 /config/autoconfig.php
 clover.xml
+
+# Owncloud-Css-Config files
+config-base.json
+install_calendar.php
+run.php
+setup_owncloud.sh
