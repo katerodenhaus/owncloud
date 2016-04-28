@@ -992,10 +992,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
         $result = [];
         while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-            if ($requirePostFilter) {
-                if (!$this->validateFilterForObject($row, $filters)) {
-                    continue;
-                }
+            if ($requirePostFilter && !$this->validateFilterForObject($row, $filters)) {
+                continue;
             }
             $result[] = $row['uri'];
         }
