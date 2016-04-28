@@ -22,7 +22,6 @@
 
 namespace OCA\DAV\CalDAV;
 
-use OC\Encryption\CssCrypt;
 use OCA\DAV\DAV\Sharing\IShareable;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCA\DAV\Connector\Sabre\Principal;
@@ -601,8 +600,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      */
     private function decryptColumns(IQueryBuilder $query)
     {
-        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal')) {
-            $decryptQuery = new CssCrypt($query);
+        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal') && \OC::$server->getConfig()->getSystemValue('encryption_class')) {
+            $class = "OC\\Encryption\\" . \OC::$server->getConfig()->getSystemValue('encryption_class');
+            $decryptQuery = new $class($query);
 
             return $decryptQuery->decryptData();
         } else {
@@ -1454,8 +1454,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      */
     private function encryptColumns(IQueryBuilder $query, array $values)
     {
-        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal')) {
-            $encryptQuery = new CssCrypt($query);
+        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal') && \OC::$server->getConfig()->getSystemValue('encryption_class')) {
+            $class = "OC\\Encryption\\" . \OC::$server->getConfig()->getSystemValue('encryption_class');
+            $encryptQuery = new $class($query);
 
             return $encryptQuery->encryptData($values);
         } else {
