@@ -17,11 +17,11 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
  */
 class CalCrypt
 {
+    private $key;
+    private $data;
     private $encrypted_fields = [
         'calendardata'
     ];
-    private $key = 'cssCalKey';
-    private $data;
 
     /**
      * CssCrypt constructor.
@@ -31,6 +31,7 @@ class CalCrypt
     public function __construct(IQueryBuilder $data)
     {
         $this->data = $data;
+        $this->key  = \OC::$server->getConfig()->getSystemValue('encrypt_key');
     }
 
     /**
