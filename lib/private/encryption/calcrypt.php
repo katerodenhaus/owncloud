@@ -47,7 +47,7 @@ class CalCrypt
                 $column = $this->data->createFunction("AES_DECRYPT($column, '$this->key') AS $column");
             }
 
-            array_push($columns, $column);
+            $columns[] = $column;
         }
 
         return $this->data->select($columns);
