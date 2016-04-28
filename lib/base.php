@@ -567,12 +567,6 @@ class OC {
 			}
 		}
 
-		if (\OC::$server->getConfig()->getSystemValue('additional_valid_paths')) {
-            foreach (\OC::$server->getConfig()->getSystemValue('additional_valid_paths') as $root) {
-                self::$loader->addValidRoot($root);
-            }
-        }
-
 		// register the stream wrappers
 		stream_wrapper_register('fakedir', 'OC\Files\Stream\Dir');
 		stream_wrapper_register('static', 'OC\Files\Stream\StaticStream');

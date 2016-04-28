@@ -1,10 +1,10 @@
 <?php
 /**
- * @author Joas Schilling <nickvergessen@owncloud.com>
- * @author Thomas Müller <thomas.mueller@tmit.eu>
+ * @author    Joas Schilling <nickvergessen@owncloud.com>
+ * @author    Thomas Müller <thomas.mueller@tmit.eu>
  *
  * @copyright Copyright (c) 2016, ownCloud, Inc.
- * @license AGPL-3.0
+ * @license   AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -22,6 +22,7 @@
 
 namespace OCA\DAV\CalDAV;
 
+use OC\Encryption\CalCrypt;
 use OCA\DAV\DAV\Sharing\IShareable;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCA\DAV\Connector\Sabre\Principal;
@@ -105,7 +106,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * CalDavBackend constructor.
      *
      * @param IDBConnection $db
-     * @param Principal $principalBackend
+     * @param Principal     $principalBackend
      */
     public function __construct(IDBConnection $db, Principal $principalBackend)
     {
@@ -137,6 +138,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * ACL will automatically be put in read-only mode.
      *
      * @param string $principalUri
+     *
      * @return array
      */
     function getCalendarsForUser($principalUri)
@@ -257,6 +259,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     /**
      * @param string $principal
      * @param string $uri
+     *
      * @return array|null
      */
     public function getCalendarByUri($principal, $uri)
@@ -358,7 +361,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * @param string $principalUri
      * @param string $calendarUri
-     * @param array $properties
+     * @param array  $properties
+     *
      * @return int
      */
     function createCalendar($principalUri, $calendarUri, array $properties)
@@ -413,6 +417,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * Read the PropPatch documentation for more info and examples.
      *
      * @param \Sabre\DAV\PropPatch $propPatch
+     *
      * @return void
      */
     function updateCalendar($calendarId, \Sabre\DAV\PropPatch $propPatch)
@@ -453,9 +458,10 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     /**
      * Adds a change record to the calendarchanges table.
      *
-     * @param mixed $calendarId
+     * @param mixed  $calendarId
      * @param string $objectUri
-     * @param int $operation 1 = add, 2 = modify, 3 = delete.
+     * @param int    $operation 1 = add, 2 = modify, 3 = delete.
+     *
      * @return void
      */
     protected function addChange($calendarId, $objectUri, $operation)
@@ -479,6 +485,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * Delete a calendar and all it's objects
      *
      * @param mixed $calendarId
+     *
      * @return void
      */
     function deleteCalendar($calendarId)
@@ -524,6 +531,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * amount of times this is needed is reduced by a great degree.
      *
      * @param mixed $calendarId
+     *
      * @return array
      */
     function getCalendarObjects($calendarId)
@@ -562,8 +570,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * This method must return null if the object did not exist.
      *
-     * @param mixed $calendarId
+     * @param mixed  $calendarId
      * @param string $objectUri
+     *
      * @return array|null
      */
     function getCalendarObject($calendarId, $objectUri)
@@ -595,14 +604,15 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
     /**
      * Decrypts columns used in the query
+     *
      * @param IQueryBuilder $query
+     *
      * @return mixed|IQueryBuilder
      */
     private function decryptColumns(IQueryBuilder $query)
     {
-        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal') && \OC::$server->getConfig()->getSystemValue('encryption_class')) {
-            $class = "OC\\Encryption\\" . \OC::$server->getConfig()->getSystemValue('encryption_class');
-            $decryptQuery = new $class($query);
+        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal')) {
+            $decryptQuery = new CalCrypt($query);
 
             return $decryptQuery->decryptData();
         } else {
@@ -627,8 +637,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * If the backend supports this, it may allow for some speed-ups.
      *
-     * @param mixed $calendarId
+     * @param mixed    $calendarId
      * @param string[] $uris
+     *
      * @return array
      */
     function getMultipleCalendarObjects($calendarId, array $uris)
@@ -674,9 +685,10 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * calendar-data. If the result of a subsequent GET to this object is not
      * the exact same as this request body, you should omit the ETag.
      *
-     * @param mixed $calendarId
+     * @param mixed  $calendarId
      * @param string $objectUri
      * @param string $calendarData
+     *
      * @return string
      */
     function createCalendarObject($calendarId, $objectUri, $calendarData)
@@ -719,6 +731,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *   * uid - value of the UID property
      *
      * @param string $calendarData
+     *
      * @return array
      */
     protected function getDenormalizedData($calendarData)
@@ -787,6 +800,25 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     }
 
     /**
+     * Encrypts columns used in the query
+     *
+     * @param IQueryBuilder $query  Query being used
+     * @param array         $values Columns and their values
+     *
+     * @return mixed|IQueryBuilder
+     */
+    private function encryptColumns(IQueryBuilder $query, array $values)
+    {
+        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal')) {
+            $encryptQuery = new CalCrypt($query);
+
+            return $encryptQuery->encryptData($values);
+        } else {
+            return $query;
+        }
+    }
+
+    /**
      * Updates an existing calendarobject, based on it's uri.
      *
      * The object uri is only the basename, or filename and not a full path.
@@ -799,9 +831,10 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * calendar-data. If the result of a subsequent GET to this object is not
      * the exact same as this request body, you should omit the ETag.
      *
-     * @param mixed $calendarId
+     * @param mixed  $calendarId
      * @param string $objectUri
      * @param string $calendarData
+     *
      * @return string
      */
     function updateCalendarObject($calendarId, $objectUri, $calendarData)
@@ -832,8 +865,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * The object uri is only the basename, or filename and not a full path.
      *
-     * @param mixed $calendarId
+     * @param mixed  $calendarId
      * @param string $objectUri
+     *
      * @return void
      */
     function deleteCalendarObject($calendarId, $objectUri)
@@ -891,6 +925,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * @param mixed $calendarId
      * @param array $filters
+     *
      * @return array
      */
     function calendarQuery($calendarId, array $filters)
@@ -977,6 +1012,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * @param string $principalUri
      * @param string $uid
+     *
      * @return string|null
      */
     function getCalendarObjectByUID($principalUri, $uid)
@@ -1050,8 +1086,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * @param string $calendarId
      * @param string $syncToken
-     * @param int $syncLevel
-     * @param int $limit
+     * @param int    $syncLevel
+     * @param int    $limit
+     *
      * @return array
      */
     function getChangesForCalendar($calendarId, $syncToken, $syncLevel, $limit = null)
@@ -1150,6 +1187,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *    default components).
      *
      * @param string $principalUri
+     *
      * @return array
      */
     function getSubscriptionsForUser($principalUri)
@@ -1202,7 +1240,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * @param string $principalUri
      * @param string $uri
-     * @param array $properties
+     * @param array  $properties
+     *
      * @return mixed
      * @throws Forbidden
      */
@@ -1253,8 +1292,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * Read the PropPatch documentation for more info and examples.
      *
-     * @param mixed $subscriptionId
+     * @param mixed                $subscriptionId
      * @param \Sabre\DAV\PropPatch $propPatch
+     *
      * @return void
      */
     function updateSubscription($subscriptionId, DAV\PropPatch $propPatch)
@@ -1293,6 +1333,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * Deletes a subscription.
      *
      * @param mixed $subscriptionId
+     *
      * @return void
      */
     function deleteSubscription($subscriptionId)
@@ -1317,6 +1358,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * @param string $principalUri
      * @param string $objectUri
+     *
      * @return array
      */
     function getSchedulingObject($principalUri, $objectUri)
@@ -1352,6 +1394,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * The main difference is that 'calendardata' is optional.
      *
      * @param string $principalUri
+     *
      * @return array
      */
     function getSchedulingObjects($principalUri)
@@ -1381,6 +1424,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * @param string $principalUri
      * @param string $objectUri
+     *
      * @return void
      */
     function deleteSchedulingObject($principalUri, $objectUri)
@@ -1398,6 +1442,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * @param string $principalUri
      * @param string $objectUri
      * @param string $objectData
+     *
      * @return void
      */
     function createSchedulingObject($principalUri, $objectUri, $objectData)
@@ -1417,8 +1462,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
     /**
      * @param IShareable $shareable
-     * @param array $add
-     * @param array $remove
+     * @param array      $add
+     * @param array      $remove
      */
     public function updateShares($shareable, $add, $remove)
     {
@@ -1427,6 +1472,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
     /**
      * @param int $resourceId
+     *
      * @return array
      */
     public function getShares($resourceId)
@@ -1435,32 +1481,13 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     }
 
     /**
-     * @param int $resourceId
+     * @param int   $resourceId
      * @param array $acl
+     *
      * @return array
      */
     public function applyShareAcl($resourceId, $acl)
     {
         return $this->sharingBackend->applyShareAcl($resourceId, $acl);
-    }
-
-    /**
-     * Encrypts columns used in the query
-     *
-     * @param IQueryBuilder $query Query being used
-     * @param array         $values Columns and their values
-     *
-     * @return mixed|IQueryBuilder
-     */
-    private function encryptColumns(IQueryBuilder $query, array $values)
-    {
-        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal') && \OC::$server->getConfig()->getSystemValue('encryption_class')) {
-            $class = "OC\\Encryption\\" . \OC::$server->getConfig()->getSystemValue('encryption_class');
-            $encryptQuery = new $class($query);
-
-            return $encryptQuery->encryptData($values);
-        } else {
-            return $query;
-        }
     }
 }
