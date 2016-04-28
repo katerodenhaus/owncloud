@@ -134,7 +134,7 @@ class OC {
 
 		OC::$SUBURI = str_replace("\\", "/", substr(realpath($_SERVER["SCRIPT_FILENAME"]), strlen(OC::$SERVERROOT)));
 		/**
-		 * FIXME: The following lines are required because we can't yet instantiiate
+		 * FIXME: The following lines are required because we can't yet instantiate
 		 *        \OC::$server->getRequest() since \OC::$server does not yet exist.
 		 */
 		$params = [
@@ -487,13 +487,14 @@ class OC {
 		// register autoloader
 		$loaderStart = microtime(true);
 		require_once __DIR__ . '/autoloader.php';
+
 		self::$loader = new \OC\Autoloader([
-			OC::$SERVERROOT . '/lib',
-			OC::$SERVERROOT . '/core',
-			OC::$SERVERROOT . '/settings',
-			OC::$SERVERROOT . '/ocs',
-			OC::$SERVERROOT . '/ocs-provider',
-		]);
+            OC::$SERVERROOT . '/lib',
+            OC::$SERVERROOT . '/core',
+            OC::$SERVERROOT . '/settings',
+            OC::$SERVERROOT . '/ocs',
+            OC::$SERVERROOT . '/ocs-provider',
+        ]);
 		if (defined('PHPUNIT_RUN')) {
 			self::$loader->addValidRoot(OC::$SERVERROOT . '/tests');
 		}
@@ -565,6 +566,12 @@ class OC {
 				OC\Log\ErrorHandler::register();
 			}
 		}
+
+		if (\OC::$server->getConfig()->getSystemValue('additional_valid_paths')) {
+            foreach (\OC::$server->getConfig()->getSystemValue('additional_valid_paths') as $root) {
+                self::$loader->addValidRoot($root);
+            }
+        }
 
 		// register the stream wrappers
 		stream_wrapper_register('fakedir', 'OC\Files\Stream\Dir');

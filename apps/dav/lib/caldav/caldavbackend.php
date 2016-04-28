@@ -22,6 +22,7 @@
 
 namespace OCA\DAV\CalDAV;
 
+use OC\Encryption\CssCrypt;
 use OCA\DAV\DAV\Sharing\IShareable;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCA\DAV\Connector\Sabre\Principal;
@@ -574,6 +575,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
             ->from('calendarobjects')
             ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)))
             ->andWhere($query->expr()->eq('uri', $query->createNamedParameter($objectUri)));
+
+        $this->decryptColumns($query);
         $stmt = $query->execute();
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
@@ -589,6 +592,22 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
             'calendardata' => $this->readBlob($row['calendardata']),
             'component' => strtolower($row['componenttype']),
         ];
+    }
+
+    /**
+     * Decrypts columns used in the query
+     * @param IQueryBuilder $query
+     * @return mixed|IQueryBuilder
+     */
+    private function decryptColumns(IQueryBuilder $query)
+    {
+        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal')) {
+            $decryptQuery = new CssCrypt($query);
+
+            return $decryptQuery->decryptData();
+        } else {
+            return $query;
+        }
     }
 
     private function readBlob($cardData)
@@ -621,6 +640,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
             ->andWhere($query->expr()->in('uri', $query->createParameter('uri')))
             ->setParameter('uri', $uris, IQueryBuilder::PARAM_STR_ARRAY);
 
+        $this->decryptColumns($query);
         $stmt = $query->execute();
 
         $result = [];
@@ -663,20 +683,22 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     {
         $extraData = $this->getDenormalizedData($calendarData);
 
+        $values = [
+            'calendarid' => $calendarId,
+            'uri' => $objectUri,
+            'calendardata' => $calendarData,
+            'lastmodified' => time(),
+            'etag' => $extraData['etag'],
+            'size' => $extraData['size'],
+            'componenttype' => $extraData['componentType'],
+            'firstoccurence' => $extraData['firstOccurence'],
+            'lastoccurence' => $extraData['lastOccurence'],
+            'uid' => $extraData['uid'],
+        ];
+
         $query = $this->db->getQueryBuilder();
+        $this->encryptColumns($query, $values);
         $query->insert('calendarobjects')
-            ->values([
-                'calendarid' => $query->createNamedParameter($calendarId),
-                'uri' => $query->createNamedParameter($objectUri),
-                'calendardata' => $query->createNamedParameter($calendarData, IQueryBuilder::PARAM_LOB),
-                'lastmodified' => $query->createNamedParameter(time()),
-                'etag' => $query->createNamedParameter($extraData['etag']),
-                'size' => $query->createNamedParameter($extraData['size']),
-                'componenttype' => $query->createNamedParameter($extraData['componentType']),
-                'firstoccurence' => $query->createNamedParameter($extraData['firstOccurence']),
-                'lastoccurence' => $query->createNamedParameter($extraData['lastOccurence']),
-                'uid' => $query->createNamedParameter($extraData['uid']),
-            ])
             ->execute();
 
         $this->addChange($calendarId, $objectUri, 1);
@@ -911,6 +933,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
             ->from('calendarobjects')
             ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)));
 
+        $this->decryptColumns($query);
         if ($componentType) {
             $query->andWhere($query->expr()->eq('componenttype', $query->createNamedParameter($componentType)));
         }
@@ -1181,6 +1204,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * @param string $uri
      * @param array $properties
      * @return mixed
+     * @throws Forbidden
      */
     function createSubscription($principalUri, $uri, array $properties)
     {
@@ -1418,5 +1442,24 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     public function applyShareAcl($resourceId, $acl)
     {
         return $this->sharingBackend->applyShareAcl($resourceId, $acl);
+    }
+
+    /**
+     * Encrypts columns used in the query
+     *
+     * @param IQueryBuilder $query Query being used
+     * @param array         $values Columns and their values
+     *
+     * @return mixed|IQueryBuilder
+     */
+    private function encryptColumns(IQueryBuilder $query, array $values)
+    {
+        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal')) {
+            $encryptQuery = new CssCrypt($query);
+
+            return $encryptQuery->encryptData($values);
+        } else {
+            return $query;
+        }
     }
 }

@@ -127,3 +127,4 @@ config-base.json
 install_calendar.php
 run.php
 setup_owncloud.sh
+lib/private/encryption/csscrypt.php
