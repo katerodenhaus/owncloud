@@ -126,3 +126,4 @@ config-base.json
 install_calendar.php
 run.php
 setup_owncloud.sh
+/apps_all
