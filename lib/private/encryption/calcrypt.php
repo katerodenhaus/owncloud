@@ -8,6 +8,7 @@
 
 namespace OC\Encryption;
 
+use OC\OCS\Exception;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
 
@@ -20,18 +21,27 @@ class CalCrypt
     private $key;
     private $data;
     private $encrypted_fields = [
-        'calendardata'
+        'calendardata',
+        'password'
     ];
 
     /**
      * CssCrypt constructor.
      *
      * @param $data
+     *
+     * @throws \UnexpectedValueException
      */
     public function __construct(IQueryBuilder $data)
     {
         $this->data = $data;
         $this->key  = \OC::$server->getConfig()->getSystemValue('encrypt_key');
+
+        if ($this->key !== '') {
+            $logger = \OC::$server->getLogger();
+            $logger->warning("Error occurred while writing user's password");
+            $logger->logException(new \UnexpectedValueException('Value must exist for encrypt_key in the config to use encryption'));
+        }
     }
 
     /**

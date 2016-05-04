@@ -716,8 +716,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
         $query = $this->db->getQueryBuilder();
         $this->encryptColumns($query, $values);
-        $query->insert('calendarobjects')
-            ->execute();
+        $query->insert('calendarobjects')->execute();
 
         $this->addChange($calendarId, $objectUri, 1);
 
@@ -975,8 +974,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         $query->select($columns)
             ->from('calendarobjects')
             ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)));
-
         $this->decryptColumns($query);
+
         if ($componentType) {
             $query->andWhere($query->expr()->eq('componenttype', $query->createNamedParameter($componentType)));
         }
