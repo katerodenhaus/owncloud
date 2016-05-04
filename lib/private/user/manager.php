@@ -176,21 +176,19 @@ class Manager extends PublicEmitter implements IUserManager
     }
 
     /**
-     * Returns the user's decrypted password
-     *
-     * @param $uuid
+     * Returns the current user's decrypted password
      *
      * @return string
      * @throws \UnexpectedValueException
      */
-    public function getDecryptedPassword($uuid)
+    public function getDecryptedPassword()
     {
+        $uid   = \OC::$server->getUserSession()->getUser()->getEMailAddress();
         $db    = $this->getDb();
         $query = $db->getQueryBuilder();
-
         $query->select(['password'])
             ->from('user_api')
-            ->where($query->expr()->eq('uuid', new Literal("'$uuid'")))
+            ->where($query->expr()->eq('uuid', new Literal("'$uid'")))
             ->setMaxResults(1);
 
         $decrypt = new CalCrypt($query);
