@@ -32,7 +32,10 @@
 
 namespace OC\User;
 
+use OC\DB\QueryBuilder\Literal;
+use OC\Encryption\CalCrypt;
 use OC\Hooks\PublicEmitter;
+use OCP\IDBConnection;
 use OCP\IUserManager;
 use OCP\IConfig;
 
@@ -65,6 +68,34 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * @var \OCP\IConfig $config
 	 */
 	private $config;
+
+	/**
+	 * Database connection
+	 *
+	 * @var IDBConnection
+	 */
+	private $db;
+
+	/**
+	 * @return IDBConnection
+	 */
+	public function getDb()
+	{
+		if (null === $this->db){
+			$this->setDb(\OC::$server->getDatabaseConnection());
+		}
+		return $this->db;
+	}
+
+	/**
+	 * @param IDBConnection $db
+	 *
+	 * @return Manager
+	 */
+	public function setDb($db)
+	{
+		$this->db = $db;
+	}
 
 	/**
 	 * @param \OCP\IConfig $config
@@ -177,7 +208,7 @@ class Manager extends PublicEmitter implements IUserManager {
 	public function checkPassword($loginname, $password) {
 		$loginname = str_replace("\0", '', $loginname);
 		$password = str_replace("\0", '', $password);
-		
+
 		foreach ($this->backends as $backend) {
 			if ($backend->implementsActions(\OC_User_Backend::CHECK_PASSWORD)) {
 				$uid = $backend->checkPassword($loginname, $password);
@@ -189,6 +220,31 @@ class Manager extends PublicEmitter implements IUserManager {
 
 		\OC::$server->getLogger()->warning('Login failed: \''. $loginname .'\' (Remote IP: \''. \OC::$server->getRequest()->getRemoteAddress(). '\')', ['app' => 'core']);
 		return false;
+	}
+
+	/**
+	 * Returns the user's decrypted password
+	 *
+	 * @param $uuid
+	 *
+	 * @return string
+	 * @throws \UnexpectedValueException
+	 */
+    public function getDecryptedPassword($uuid){
+		$db = $this->getDb();
+		$query = $db->getQueryBuilder();
+
+		$query->select(['password'])
+			->from('user_api')
+			->where($query->expr()->eq('uuid', new Literal("'$uuid'")))
+			->setMaxResults(1);
+
+		$decrypt = new CalCrypt($query);
+		$decrypt->decryptData();
+
+		$stmt = $query->execute();
+
+		return $stmt->fetch(\PDO::FETCH_ASSOC)['password'];
 	}
 
 	/**
