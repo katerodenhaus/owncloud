@@ -1,20 +1,20 @@
 <?php
 /**
- * @author Arthur Schiwon <blizzz@owncloud.com>
- * @author Joas Schilling <nickvergessen@owncloud.com>
- * @author Jörn Friedrich Dreyer <jfd@butonic.de>
- * @author Lukas Reschke <lukas@owncloud.com>
- * @author Michael U <mdusher@users.noreply.github.com>
- * @author Morris Jobke <hey@morrisjobke.de>
- * @author RealRancor <Fisch.666@gmx.de>
- * @author Robin Appelman <icewind@owncloud.com>
- * @author Robin McCorkell <robin@mccorkell.me.uk>
- * @author Thomas Müller <thomas.mueller@tmit.eu>
- * @author Vincent Chan <plus.vincchan@gmail.com>
- * @author Volkan Gezer <volkangezer@gmail.com>
+ * @author    Arthur Schiwon <blizzz@owncloud.com>
+ * @author    Joas Schilling <nickvergessen@owncloud.com>
+ * @author    Jörn Friedrich Dreyer <jfd@butonic.de>
+ * @author    Lukas Reschke <lukas@owncloud.com>
+ * @author    Michael U <mdusher@users.noreply.github.com>
+ * @author    Morris Jobke <hey@morrisjobke.de>
+ * @author    RealRancor <Fisch.666@gmx.de>
+ * @author    Robin Appelman <icewind@owncloud.com>
+ * @author    Robin McCorkell <robin@mccorkell.me.uk>
+ * @author    Thomas Müller <thomas.mueller@tmit.eu>
+ * @author    Vincent Chan <plus.vincchan@gmail.com>
+ * @author    Volkan Gezer <volkangezer@gmail.com>
  *
  * @copyright Copyright (c) 2016, ownCloud, Inc.
- * @license AGPL-3.0
+ * @license   AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -32,7 +32,10 @@
 
 namespace OC\User;
 
+use OC\DB\QueryBuilder\Literal;
+use OC\Encryption\CalCrypt;
 use OC\Hooks\PublicEmitter;
+use OCP\IDBConnection;
 use OCP\IUserManager;
 use OCP\IConfig;
 
@@ -50,299 +53,385 @@ use OCP\IConfig;
  *
  * @package OC\User
  */
-class Manager extends PublicEmitter implements IUserManager {
-	/**
-	 * @var \OCP\UserInterface[] $backends
-	 */
-	private $backends = array();
+class Manager extends PublicEmitter implements IUserManager
+{
+    /**
+     * @var \OCP\UserInterface[] $backends
+     */
+    private $backends = [];
 
-	/**
-	 * @var \OC\User\User[] $cachedUsers
-	 */
-	private $cachedUsers = array();
+    /**
+     * @var \OC\User\User[] $cachedUsers
+     */
+    private $cachedUsers = [];
 
-	/**
-	 * @var \OCP\IConfig $config
-	 */
-	private $config;
+    /**
+     * @var \OCP\IConfig $config
+     */
+    private $config;
 
-	/**
-	 * @param \OCP\IConfig $config
-	 */
-	public function __construct(IConfig $config = null) {
-		$this->config = $config;
-		$cachedUsers = &$this->cachedUsers;
-		$this->listen('\OC\User', 'postDelete', function ($user) use (&$cachedUsers) {
-			/** @var \OC\User\User $user */
-			unset($cachedUsers[$user->getUID()]);
-		});
-		$this->listen('\OC\User', 'postLogin', function ($user) {
-			/** @var \OC\User\User $user */
-			$user->updateLastLoginTimestamp();
-		});
-		$this->listen('\OC\User', 'postRememberedLogin', function ($user) {
-			/** @var \OC\User\User $user */
-			$user->updateLastLoginTimestamp();
-		});
-	}
+    /**
+     * Database connection
+     *
+     * @var IDBConnection
+     */
+    private $db;
 
-	/**
-	 * Get the active backends
-	 * @return \OCP\UserInterface[]
-	 */
-	public function getBackends() {
-		return $this->backends;
-	}
+    /**
+     * @param \OCP\IConfig $config
+     */
+    public function __construct(IConfig $config = null)
+    {
+        $this->config = $config;
+        $cachedUsers  = &$this->cachedUsers;
+        $this->listen('\OC\User', 'postDelete', function ($user) use (&$cachedUsers) {
+            /** @var \OC\User\User $user */
+            unset($cachedUsers[$user->getUID()]);
+        });
+        $this->listen('\OC\User', 'postLogin', function ($user) {
+            /** @var \OC\User\User $user */
+            $user->updateLastLoginTimestamp();
+        });
+        $this->listen('\OC\User', 'postRememberedLogin', function ($user) {
+            /** @var \OC\User\User $user */
+            $user->updateLastLoginTimestamp();
+        });
+    }
 
-	/**
-	 * register a user backend
-	 *
-	 * @param \OCP\UserInterface $backend
-	 */
-	public function registerBackend($backend) {
-		$this->backends[] = $backend;
-	}
+    /**
+     * register a user backend
+     *
+     * @param \OCP\UserInterface $backend
+     */
+    public function registerBackend($backend)
+    {
+        $this->backends[] = $backend;
+    }
 
-	/**
-	 * remove a user backend
-	 *
-	 * @param \OCP\UserInterface $backend
-	 */
-	public function removeBackend($backend) {
-		$this->cachedUsers = array();
-		if (($i = array_search($backend, $this->backends)) !== false) {
-			unset($this->backends[$i]);
-		}
-	}
+    /**
+     * remove a user backend
+     *
+     * @param \OCP\UserInterface $backend
+     */
+    public function removeBackend($backend)
+    {
+        $this->cachedUsers = [];
+        if (($i = array_search($backend, $this->backends)) !== false) {
+            unset($this->backends[$i]);
+        }
+    }
 
-	/**
-	 * remove all user backends
-	 */
-	public function clearBackends() {
-		$this->cachedUsers = array();
-		$this->backends = array();
-	}
+    /**
+     * remove all user backends
+     */
+    public function clearBackends()
+    {
+        $this->cachedUsers = [];
+        $this->backends    = [];
+    }
 
-	/**
-	 * get a user by user id
-	 *
-	 * @param string $uid
-	 * @return \OC\User\User|null Either the user or null if the specified user does not exist
-	 */
-	public function get($uid) {
-		if (isset($this->cachedUsers[$uid])) { //check the cache first to prevent having to loop over the backends
-			return $this->cachedUsers[$uid];
-		}
-		foreach ($this->backends as $backend) {
-			if ($backend->userExists($uid)) {
-				return $this->getUserObject($uid, $backend);
-			}
-		}
-		return null;
-	}
+    /**
+     * Check if the password is valid for the user
+     *
+     * @param string $loginname
+     * @param string $password
+     *
+     * @return mixed the User object on success, false otherwise
+     */
+    public function checkPassword($loginname, $password)
+    {
+        $loginname = str_replace("\0", '', $loginname);
+        $password  = str_replace("\0", '', $password);
 
-	/**
-	 * get or construct the user object
-	 *
-	 * @param string $uid
-	 * @param \OCP\UserInterface $backend
-	 * @return \OC\User\User
-	 */
-	protected function getUserObject($uid, $backend) {
-		if (isset($this->cachedUsers[$uid])) {
-			return $this->cachedUsers[$uid];
-		}
-		$this->cachedUsers[$uid] = new User($uid, $backend, $this, $this->config);
-		return $this->cachedUsers[$uid];
-	}
+        foreach ($this->backends as $backend) {
+            if ($backend->implementsActions(\OC_User_Backend::CHECK_PASSWORD)) {
+                $uid = $backend->checkPassword($loginname, $password);
+                if ($uid !== false) {
+                    return $this->getUserObject($uid, $backend);
+                }
+            }
+        }
 
-	/**
-	 * check if a user exists
-	 *
-	 * @param string $uid
-	 * @return bool
-	 */
-	public function userExists($uid) {
-		$user = $this->get($uid);
-		return ($user !== null);
-	}
+        \OC::$server->getLogger()->warning('Login failed: \'' . $loginname . '\' (Remote IP: \'' . \OC::$server->getRequest()->getRemoteAddress() . '\')', ['app' => 'core']);
 
-	/**
-	 * Check if the password is valid for the user
-	 *
-	 * @param string $loginname
-	 * @param string $password
-	 * @return mixed the User object on success, false otherwise
-	 */
-	public function checkPassword($loginname, $password) {
-		$loginname = str_replace("\0", '', $loginname);
-		$password = str_replace("\0", '', $password);
-		
-		foreach ($this->backends as $backend) {
-			if ($backend->implementsActions(\OC_User_Backend::CHECK_PASSWORD)) {
-				$uid = $backend->checkPassword($loginname, $password);
-				if ($uid !== false) {
-					return $this->getUserObject($uid, $backend);
-				}
-			}
-		}
+        return false;
+    }
 
-		\OC::$server->getLogger()->warning('Login failed: \''. $loginname .'\' (Remote IP: \''. \OC::$server->getRequest()->getRemoteAddress(). '\')', ['app' => 'core']);
-		return false;
-	}
+    /**
+     * get or construct the user object
+     *
+     * @param string             $uid
+     * @param \OCP\UserInterface $backend
+     *
+     * @return \OC\User\User
+     */
+    protected function getUserObject($uid, $backend)
+    {
+        if (isset($this->cachedUsers[$uid])) {
+            return $this->cachedUsers[$uid];
+        }
+        $this->cachedUsers[$uid] = new User($uid, $backend, $this, $this->config);
 
-	/**
-	 * search by user id
-	 *
-	 * @param string $pattern
-	 * @param int $limit
-	 * @param int $offset
-	 * @return \OC\User\User[]
-	 */
-	public function search($pattern, $limit = null, $offset = null) {
-		$users = array();
-		foreach ($this->backends as $backend) {
-			$backendUsers = $backend->getUsers($pattern, $limit, $offset);
-			if (is_array($backendUsers)) {
-				foreach ($backendUsers as $uid) {
-					$users[$uid] = $this->getUserObject($uid, $backend);
-				}
-			}
-		}
+        return $this->cachedUsers[$uid];
+    }
 
-		uasort($users, function ($a, $b) {
-			/**
-			 * @var \OC\User\User $a
-			 * @var \OC\User\User $b
-			 */
-			return strcmp($a->getUID(), $b->getUID());
-		});
-		return $users;
-	}
+    /**
+     * Returns the current user's decrypted password
+     *
+     * @return string
+     * @throws \UnexpectedValueException
+     */
+    public function getDecryptedPassword()
+    {
+        $uid   = \OC::$server->getUserSession()->getUser()->getEMailAddress();
+        $db    = $this->getDb();
+        $query = $db->getQueryBuilder();
+        $query->select(['password'])
+            ->from('user_api')
+            ->where($query->expr()->eq('uuid', new Literal("'$uid'")))
+            ->setMaxResults(1);
 
-	/**
-	 * search by displayName
-	 *
-	 * @param string $pattern
-	 * @param int $limit
-	 * @param int $offset
-	 * @return \OC\User\User[]
-	 */
-	public function searchDisplayName($pattern, $limit = null, $offset = null) {
-		$users = array();
-		foreach ($this->backends as $backend) {
-			$backendUsers = $backend->getDisplayNames($pattern, $limit, $offset);
-			if (is_array($backendUsers)) {
-				foreach ($backendUsers as $uid => $displayName) {
-					$users[] = $this->getUserObject($uid, $backend);
-				}
-			}
-		}
+        $decrypt = new CalCrypt($query);
+        $decrypt->decryptData();
 
-		usort($users, function ($a, $b) {
-			/**
-			 * @var \OC\User\User $a
-			 * @var \OC\User\User $b
-			 */
-			return strcmp($a->getDisplayName(), $b->getDisplayName());
-		});
-		return $users;
-	}
+        $stmt = $query->execute();
 
-	/**
-	 * @param string $uid
-	 * @param string $password
-	 * @throws \Exception
-	 * @return bool|\OC\User\User the created user or false
-	 */
-	public function createUser($uid, $password) {
-		$l = \OC::$server->getL10N('lib');
-		// Check the name for bad characters
-		// Allowed are: "a-z", "A-Z", "0-9" and "_.@-'"
-		if (preg_match('/[^a-zA-Z0-9 _\.@\-\']/', $uid)) {
-			throw new \Exception($l->t('Only the following characters are allowed in a username:'
-				. ' "a-z", "A-Z", "0-9", and "_.@-\'"'));
-		}
-		// No empty username
-		if (trim($uid) == '') {
-			throw new \Exception($l->t('A valid username must be provided'));
-		}
-		// No whitespace at the beginning or at the end
-		if (strlen(trim($uid, "\t\n\r\0\x0B\xe2\x80\x8b")) !== strlen(trim($uid))) {
-			throw new \Exception($l->t('Username contains whitespace at the beginning or at the end'));
-		}
-		// No empty password
-		if (trim($password) == '') {
-			throw new \Exception($l->t('A valid password must be provided'));
-		}
+        return $stmt->fetch(\PDO::FETCH_ASSOC)['password'];
+    }
 
-		// Check if user already exists
-		if ($this->userExists($uid)) {
-			throw new \Exception($l->t('The username is already being used'));
-		}
+    /**
+     * @return IDBConnection
+     */
+    public function getDb()
+    {
+        if (null === $this->db) {
+            $this->setDb(\OC::$server->getDatabaseConnection());
+        }
 
-		$this->emit('\OC\User', 'preCreateUser', array($uid, $password));
-		foreach ($this->backends as $backend) {
-			if ($backend->implementsActions(\OC_User_Backend::CREATE_USER)) {
-				$backend->createUser($uid, $password);
-				$user = $this->getUserObject($uid, $backend);
-				$this->emit('\OC\User', 'postCreateUser', array($user, $password));
-				return $user;
-			}
-		}
-		return false;
-	}
+        return $this->db;
+    }
 
-	/**
-	 * returns how many users per backend exist (if supported by backend)
-	 *
-	 * @return array an array of backend class as key and count number as value
-	 */
-	public function countUsers() {
-		$userCountStatistics = array();
-		foreach ($this->backends as $backend) {
-			if ($backend->implementsActions(\OC_User_Backend::COUNT_USERS)) {
-				$backendUsers = $backend->countUsers();
-				if($backendUsers !== false) {
-					if($backend instanceof \OCP\IUserBackend) {
-						$name = $backend->getBackendName();
-					} else {
-						$name = get_class($backend);
-					}
-					if(isset($userCountStatistics[$name])) {
-						$userCountStatistics[$name] += $backendUsers;
-					} else {
-						$userCountStatistics[$name] = $backendUsers;
-					}
-				}
-			}
-		}
-		return $userCountStatistics;
-	}
+    /**
+     * @param IDBConnection $db
+     *
+     * @return Manager
+     */
+    public function setDb($db)
+    {
+        $this->db = $db;
+    }
 
-	/**
-	 * The callback is executed for each user on each backend.
-	 * If the callback returns false no further users will be retrieved.
-	 *
-	 * @param \Closure $callback
-	 * @return void
-	 * @since 9.0.0
-	 */
-	public function callForAllUsers(\Closure $callback, $search = '') {
-		foreach($this->getBackends() as $backend) {
-			$limit = 500;
-			$offset = 0;
-			do {
-				$users = $backend->getUsers($search, $limit, $offset);
-				foreach ($users as $user) {
-					$user = $this->get($user);
-					$return = $callback($user);
-					if ($return === false) {
-						break;
-					}
-				}
-				$offset += $limit;
-			} while (count($users) >= $limit);
-		}
-	}
+    /**
+     * search by user id
+     *
+     * @param string $pattern
+     * @param int    $limit
+     * @param int    $offset
+     *
+     * @return \OC\User\User[]
+     */
+    public function search($pattern, $limit = null, $offset = null)
+    {
+        $users = [];
+        foreach ($this->backends as $backend) {
+            $backendUsers = $backend->getUsers($pattern, $limit, $offset);
+            if (is_array($backendUsers)) {
+                foreach ($backendUsers as $uid) {
+                    $users[$uid] = $this->getUserObject($uid, $backend);
+                }
+            }
+        }
+
+        uasort($users, function ($a, $b) {
+            /**
+             * @var \OC\User\User $a
+             * @var \OC\User\User $b
+             */
+            return strcmp($a->getUID(), $b->getUID());
+        });
+
+        return $users;
+    }
+
+    /**
+     * search by displayName
+     *
+     * @param string $pattern
+     * @param int    $limit
+     * @param int    $offset
+     *
+     * @return \OC\User\User[]
+     */
+    public function searchDisplayName($pattern, $limit = null, $offset = null)
+    {
+        $users = [];
+        foreach ($this->backends as $backend) {
+            $backendUsers = $backend->getDisplayNames($pattern, $limit, $offset);
+            if (is_array($backendUsers)) {
+                foreach ($backendUsers as $uid => $displayName) {
+                    $users[] = $this->getUserObject($uid, $backend);
+                }
+            }
+        }
+
+        usort($users, function ($a, $b) {
+            /**
+             * @var \OC\User\User $a
+             * @var \OC\User\User $b
+             */
+            return strcmp($a->getDisplayName(), $b->getDisplayName());
+        });
+
+        return $users;
+    }
+
+    /**
+     * @param string $uid
+     * @param string $password
+     *
+     * @return bool|\OC\User\User the created user or false
+     * @throws \InvalidArgumentException
+     */
+    public function createUser($uid, $password)
+    {
+        $l = \OC::$server->getL10N('lib');
+        // Check the name for bad characters
+        // Allowed are: "a-z", "A-Z", "0-9" and "_.@-'"
+        if (preg_match('/[^a-zA-Z0-9 _\.@\-\']/', $uid)) {
+            throw new \InvalidArgumentException($l->t('Only the following characters are allowed in a username:'
+                . ' "a-z", "A-Z", "0-9", and "_.@-\'"'));
+        }
+        // No empty username
+        if (trim($uid) === '') {
+            throw new \InvalidArgumentException($l->t('A valid username must be provided'));
+        }
+        // No whitespace at the beginning or at the end
+        if (strlen(trim($uid, "\t\n\r\0\x0B\xe2\x80\x8b")) !== strlen(trim($uid))) {
+            throw new \InvalidArgumentException($l->t('Username contains whitespace at the beginning or at the end'));
+        }
+        // No empty password
+        if (trim($password) === '') {
+            throw new \InvalidArgumentException($l->t('A valid password must be provided'));
+        }
+
+        // Check if user already exists
+        if ($this->userExists($uid)) {
+            throw new \InvalidArgumentException($l->t('The username is already being used'));
+        }
+
+        $this->emit('\OC\User', 'preCreateUser', [$uid, $password]);
+        foreach ($this->backends as $backend) {
+            if ($backend->implementsActions(\OC_User_Backend::CREATE_USER)) {
+                $backend->createUser($uid, $password);
+                $user = $this->getUserObject($uid, $backend);
+                $this->emit('\OC\User', 'postCreateUser', [$user, $password]);
+
+                return $user;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * check if a user exists
+     *
+     * @param string $uid
+     *
+     * @return bool
+     */
+    public function userExists($uid)
+    {
+        $user = $this->get($uid);
+
+        return ($user !== null);
+    }
+
+    /**
+     * get a user by user id
+     *
+     * @param string $uid
+     *
+     * @return \OC\User\User|null Either the user or null if the specified user does not exist
+     */
+    public function get($uid)
+    {
+        if (isset($this->cachedUsers[$uid])) { //check the cache first to prevent having to loop over the backends
+            return $this->cachedUsers[$uid];
+        }
+        foreach ($this->backends as $backend) {
+            if ($backend->userExists($uid)) {
+                return $this->getUserObject($uid, $backend);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * returns how many users per backend exist (if supported by backend)
+     *
+     * @return array an array of backend class as key and count number as value
+     */
+    public function countUsers()
+    {
+        $userCountStatistics = [];
+        foreach ($this->backends as $backend) {
+            if ($backend->implementsActions(\OC_User_Backend::COUNT_USERS)) {
+                $backendUsers = $backend->countUsers();
+                if ($backendUsers !== false) {
+                    if ($backend instanceof \OCP\IUserBackend) {
+                        $name = $backend->getBackendName();
+                    } else {
+                        $name = get_class($backend);
+                    }
+                    if (isset($userCountStatistics[$name])) {
+                        $userCountStatistics[$name] += $backendUsers;
+                    } else {
+                        $userCountStatistics[$name] = $backendUsers;
+                    }
+                }
+            }
+        }
+
+        return $userCountStatistics;
+    }
+
+    /**
+     * The callback is executed for each user on each backend.
+     * If the callback returns false no further users will be retrieved.
+     *
+     * @param \Closure $callback
+     * @param string   $search
+     *
+     * @since 9.0.0
+     */
+    public function callForAllUsers(\Closure $callback, $search = '')
+    {
+        foreach ($this->getBackends() as $backend) {
+            $limit  = 500;
+            $offset = 0;
+            do {
+                $users = $backend->getUsers($search, $limit, $offset);
+                foreach ($users as $user) {
+                    $user   = $this->get($user);
+                    $return = $callback($user);
+                    if ($return === false) {
+                        break;
+                    }
+                }
+                $offset += $limit;
+            } while (count($users) >= $limit);
+        }
+    }
+
+    /**
+     * Get the active backends
+     *
+     * @return \OCP\UserInterface[]
+     */
+    public function getBackends()
+    {
+        return $this->backends;
+    }
 }

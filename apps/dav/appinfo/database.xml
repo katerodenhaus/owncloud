@@ -689,4 +689,27 @@ CREATE TABLE calendarobjects (
 			</index>
 		</declaration>
 	</table>
+
+	<table>
+		<name>*dbprefix*user_api</name>
+		<declaration>
+			<field>
+				<name>uuid</name>
+				<type>varchar</type>
+				<length>65</length>
+			</field>
+			<field>
+				<name>password</name>
+				<type>varbinary</type>
+				<length>255</length>
+			</field>
+			<index>
+				<name>uuid</name>
+				<unique>true</unique>
+				<field>
+					<name>uuid</name>
+				</field>
+			</index>
+		</declaration>
+	</table>
 </database>
