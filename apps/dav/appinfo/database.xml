@@ -695,12 +695,12 @@ CREATE TABLE calendarobjects (
 		<declaration>
 			<field>
 				<name>uuid</name>
-				<type>varchar</type>
+				<type>text</type>
 				<length>65</length>
 			</field>
 			<field>
 				<name>password</name>
-				<type>varbinary</type>
+				<type>blob</type>
 				<length>255</length>
 			</field>
 			<index>
