@@ -37,7 +37,7 @@ class CalCrypt
         $this->data = $data;
         $this->key  = \OC::$server->getConfig()->getSystemValue('encrypt_key');
 
-        if ($this->key !== '') {
+        if ($this->key === '') {
             $logger = \OC::$server->getLogger();
             $logger->warning("Error occurred while writing user's password");
             $logger->logException(new \UnexpectedValueException('Value must exist for encrypt_key in the config to use encryption'));
