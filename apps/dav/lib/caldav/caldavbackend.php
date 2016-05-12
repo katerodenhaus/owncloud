@@ -616,7 +616,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      */
     private function decryptColumns(IQueryBuilder $query)
     {
-        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal')) {
+        if (\OC::$server->getConfig()->getSystemValue('encrypt_cal', false)) {
             $decryptQuery = new CalCrypt($query);
 
             return $decryptQuery->decryptData();
@@ -815,7 +815,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      */
     private function encryptColumns(IQueryBuilder $query, array $values)
     {
-        if (\OC::$server->getConfig()->getAppValue('core', 'encrypt_cal')) {
+        if (\OC::$server->getConfig()->getSystemValue('encrypt_cal', false)) {
             $encryptQuery = new CalCrypt($query);
 
             return $encryptQuery->encryptData($values);
