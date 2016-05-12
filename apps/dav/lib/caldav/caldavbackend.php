@@ -613,6 +613,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * @param IQueryBuilder $query
      *
      * @return mixed|IQueryBuilder
+     * @throws \UnexpectedValueException
      */
     private function decryptColumns(IQueryBuilder $query)
     {
@@ -642,10 +643,11 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * If the backend supports this, it may allow for some speed-ups.
      *
-     * @param mixed    $calendarId
+     * @param mixed $calendarId
      * @param string[] $uris
      *
      * @return array
+     * @throws \UnexpectedValueException
      */
     public function getMultipleCalendarObjects($calendarId, array $uris)
     {
@@ -691,11 +693,12 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * calendar-data. If the result of a subsequent GET to this object is not
      * the exact same as this request body, you should omit the ETag.
      *
-     * @param mixed  $calendarId
+     * @param mixed $calendarId
      * @param string $objectUri
      * @param string $calendarData
      *
      * @return string
+     * @throws \Sabre\DAV\Exception\BadRequest
      */
     public function createCalendarObject($calendarId, $objectUri, $calendarData)
     {
@@ -808,10 +811,11 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     /**
      * Encrypts columns used in the query
      *
-     * @param IQueryBuilder $query  Query being used
-     * @param array         $values Columns and their values
+     * @param IQueryBuilder $query Query being used
+     * @param array $values Columns and their values
      *
      * @return mixed|IQueryBuilder
+     * @throws \UnexpectedValueException
      */
     private function encryptColumns(IQueryBuilder $query, array $values)
     {
