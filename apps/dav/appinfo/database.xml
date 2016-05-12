@@ -593,7 +593,6 @@
             <field>
                 <name>password</name>
                 <type>blob</type>
-                <length>255</length>
             </field>
             <index>
                 <name>uuid</name>
