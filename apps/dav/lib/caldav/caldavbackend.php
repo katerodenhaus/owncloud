@@ -681,7 +681,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         }
         $query->insert('calendarobjects')->execute();
 
-        $this->notifyCalendarPrincipal($calendarId, "<p>An appointment has been made for you on your <a href='{{calendar_url}}'>{{calendar_name}} calendar</a>!</p><b>" .
+        $this->notifyCalendarPrincipal($calendarId,
+            "<p>An appointment has been made for you on your <a href='{{calendar_url}}'>{{calendar_name}} calendar</a>!</p><b>" .
             date('Y-m-d', $extraData['firstOccurence']) .
             ' from ' . date('g:iA', $extraData['firstOccurence']) . ' to ' . date('g:iA', $extraData['lastOccurence']) . '</b>');
 
@@ -786,6 +787,12 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         return $encryptQuery->encryptData($values);
     }
 
+    /**
+     * Notifies the calendar principal via Hipchat with a given message
+     *
+     * @param $calendarId   The calendar owned by the principal you want to message
+     * @param $message_text The message to send
+     */
     private function notifyCalendarPrincipal($calendarId, $message_text)
     {
         // Send Hipchat message to user
