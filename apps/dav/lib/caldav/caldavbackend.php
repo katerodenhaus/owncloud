@@ -22,6 +22,7 @@
 
 namespace OCA\DAV\CalDAV;
 
+use Hipchat\Notifier;
 use OC\Encryption\CalCrypt;
 use OCA\DAV\DAV\Sharing\IShareable;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -280,51 +281,6 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         $query->select($fields)->from('calendars')
             ->where($query->expr()->eq('uri', $query->createNamedParameter($uri)))
             ->andWhere($query->expr()->eq('principaluri', $query->createNamedParameter($principal)))
-            ->setMaxResults(1);
-        $stmt = $query->execute();
-
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-        $stmt->closeCursor();
-        if ($row === false) {
-            return null;
-        }
-
-        $components = [];
-        if ($row['components']) {
-            $components = explode(',', $row['components']);
-        }
-
-        $calendar = [
-            'id' => $row['id'],
-            'uri' => $row['uri'],
-            'principaluri' => $row['principaluri'],
-            '{' . Plugin::NS_CALENDARSERVER . '}getctag' => 'http://sabre.io/ns/sync/' . ($row['synctoken'] ? $row['synctoken'] : '0'),
-            '{http://sabredav.org/ns}sync-token' => $row['synctoken'] ? $row['synctoken'] : '0',
-            '{' . Plugin::NS_CALDAV . '}supported-calendar-component-set' => new SupportedCalendarComponentSet($components),
-            '{' . Plugin::NS_CALDAV . '}schedule-calendar-transp' => new ScheduleCalendarTransp($row['transparent'] ? 'transparent' : 'opaque'),
-        ];
-
-        foreach ($this->propertyMap as $xmlName => $dbName) {
-            $calendar[$xmlName] = $row[$dbName];
-        }
-
-        return $calendar;
-    }
-
-    public function getCalendarById($calendarId)
-    {
-        $fields = array_values($this->propertyMap);
-        $fields[] = 'id';
-        $fields[] = 'uri';
-        $fields[] = 'synctoken';
-        $fields[] = 'components';
-        $fields[] = 'principaluri';
-        $fields[] = 'transparent';
-
-        // Making fields a comma-delimited list
-        $query = $this->db->getQueryBuilder();
-        $query->select($fields)->from('calendars')
-            ->where($query->expr()->eq('id', $query->createNamedParameter($calendarId)))
             ->setMaxResults(1);
         $stmt = $query->execute();
 
@@ -697,6 +653,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * @param string $calendarData
      *
      * @return string
+     * @throws \InvalidArgumentException
      * @throws \UnexpectedValueException
      * @throws \Sabre\DAV\Exception\BadRequest
      */
@@ -723,6 +680,27 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         }
         $query->insert('calendarobjects')->execute();
 
+        $notifier = new Notifier('Rr5eb3LulUvx7CaRIB5SGcznJIbIf2WQ7DiLOxMz');
+
+        // Send Hipchat message to user
+        if (\OC::$server->getSystemConfig('hipchat_notify', false)) {
+            $calendar = $this->getCalendarById($calendarId);
+            $principal = explode('principals/users/', $calendar['principaluri'])[1];
+            date_default_timezone_set('America/New_York');
+            $message_text = "<p>An appointment has been made for you on your {$calendar['{DAV:}displayname']} calendar!</p><b>" .
+                date('Y-m-d', $extraData['firstOccurence']) .
+                ' from ' . date('H:i', $extraData['firstOccurence']) . ' to ' . date('H:i', $extraData['lastOccurence']) . '</b>';
+            $message = [
+                'from' => 'Ownpathfinder',
+                'message_format' => 'html',
+                'color' => 'purple',
+                'notify' => true,
+                'message' => $message_text
+            ];
+//        $notifier->sendUserMessage($message, $principal);
+            $notifier->sendUserMessage($message, 'pminkler@csshealth.com');
+        }
+
         $this->addChange($calendarId, $objectUri, 1);
 
         return '"' . $extraData['etag'] . '"';
@@ -747,7 +725,6 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      */
     protected function getDenormalizedData($calendarData)
     {
-
         $vObject = Reader::read($calendarData);
         $componentType = null;
         $component = null;
@@ -823,6 +800,51 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     {
         $encryptQuery = new CalCrypt($query);
         return $encryptQuery->encryptData($values);
+    }
+
+    public function getCalendarById($calendarId)
+    {
+        $fields = array_values($this->propertyMap);
+        $fields[] = 'id';
+        $fields[] = 'uri';
+        $fields[] = 'synctoken';
+        $fields[] = 'components';
+        $fields[] = 'principaluri';
+        $fields[] = 'transparent';
+
+        // Making fields a comma-delimited list
+        $query = $this->db->getQueryBuilder();
+        $query->select($fields)->from('calendars')
+            ->where($query->expr()->eq('id', $query->createNamedParameter($calendarId)))
+            ->setMaxResults(1);
+        $stmt = $query->execute();
+
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $stmt->closeCursor();
+        if ($row === false) {
+            return null;
+        }
+
+        $components = [];
+        if ($row['components']) {
+            $components = explode(',', $row['components']);
+        }
+
+        $calendar = [
+            'id' => $row['id'],
+            'uri' => $row['uri'],
+            'principaluri' => $row['principaluri'],
+            '{' . Plugin::NS_CALENDARSERVER . '}getctag' => 'http://sabre.io/ns/sync/' . ($row['synctoken'] ? $row['synctoken'] : '0'),
+            '{http://sabredav.org/ns}sync-token' => $row['synctoken'] ? $row['synctoken'] : '0',
+            '{' . Plugin::NS_CALDAV . '}supported-calendar-component-set' => new SupportedCalendarComponentSet($components),
+            '{' . Plugin::NS_CALDAV . '}schedule-calendar-transp' => new ScheduleCalendarTransp($row['transparent'] ? 'transparent' : 'opaque'),
+        ];
+
+        foreach ($this->propertyMap as $xmlName => $dbName) {
+            $calendar[$xmlName] = $row[$dbName];
+        }
+
+        return $calendar;
     }
 
     /**
