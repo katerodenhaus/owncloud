@@ -659,6 +659,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      */
     public function createCalendarObject($calendarId, $objectUri, $calendarData)
     {
+        date_default_timezone_set('America/New_York');
         $extraData = $this->getDenormalizedData($calendarData);
 
         $values = [
@@ -680,19 +681,26 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         }
         $query->insert('calendarobjects')->execute();
 
+        $this->notifyCalendarPrincipal($calendarId, "<p>An appointment has been made for you on your <a href='{{calendar_url}}'>{{calendar_name}} calendar</a>!</p><b>" .
+            date('Y-m-d', $extraData['firstOccurence']) .
+            ' from ' . date('g:iA', $extraData['firstOccurence']) . ' to ' . date('g:iA', $extraData['lastOccurence']) . '</b>');
 
+        $this->addChange($calendarId, $objectUri, 1);
+
+        return '"' . $extraData['etag'] . '"';
+    }
+
+    private function notifyCalendarPrincipal($calendarId, $message_text)
+    {
         // Send Hipchat message to user
         if (\OC::$server->getConfig()->getSystemValue('hipchat_notify', false)) {
             $notifier = new Notifier(\OC::$server->getConfig()->getSystemValue('hipchat_token', null));
             if ($notifier !== null) {
                 $calendar = $this->getCalendarById($calendarId);
                 $principal = explode('principals/users/', $calendar['principaluri'])[1];
-                $calendar_url = 'https://' . gethostname() . \OC::$WEBROOT;
-                date_default_timezone_set('America/New_York');
+                $message_text = str_replace('{{calendar_url}}', 'https://' . gethostname() . \OC::$WEBROOT, $message_text);
+                $message_text = str_replace('{{calendar_name}}', $calendar['{DAV:}displayname'], $message_text);
 
-                $message_text = "<p>An appointment has been made for you on your <a href='$calendar_url'>{$calendar['{DAV:}displayname']} calendar</a>!</p><b>" .
-                    date('Y-m-d', $extraData['firstOccurence']) .
-                    ' from ' . date('H:i', $extraData['firstOccurence']) . ' to ' . date('H:i', $extraData['lastOccurence']) . '</b>';
                 $message = [
                     'from' => 'Ownpathfinder',
                     'message_format' => 'html',
@@ -700,14 +708,11 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
                     'notify' => true,
                     'message' => $message_text
                 ];
+
 //                $notifier->sendUserMessage($message, $principal);
                 $notifier->sendUserMessage($message, 'pminkler@csshealth.com');
             }
         }
-
-        $this->addChange($calendarId, $objectUri, 1);
-
-        return '"' . $extraData['etag'] . '"';
     }
 
     /**
