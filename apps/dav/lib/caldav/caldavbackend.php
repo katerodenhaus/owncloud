@@ -680,25 +680,27 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         }
         $query->insert('calendarobjects')->execute();
 
-        $notifier = new Notifier('Rr5eb3LulUvx7CaRIB5SGcznJIbIf2WQ7DiLOxMz');
 
         // Send Hipchat message to user
-        if (\OC::$server->getSystemConfig('hipchat_notify', false)) {
-            $calendar = $this->getCalendarById($calendarId);
-            $principal = explode('principals/users/', $calendar['principaluri'])[1];
-            date_default_timezone_set('America/New_York');
-            $message_text = "<p>An appointment has been made for you on your {$calendar['{DAV:}displayname']} calendar!</p><b>" .
-                date('Y-m-d', $extraData['firstOccurence']) .
-                ' from ' . date('H:i', $extraData['firstOccurence']) . ' to ' . date('H:i', $extraData['lastOccurence']) . '</b>';
-            $message = [
-                'from' => 'Ownpathfinder',
-                'message_format' => 'html',
-                'color' => 'purple',
-                'notify' => true,
-                'message' => $message_text
-            ];
-//        $notifier->sendUserMessage($message, $principal);
-            $notifier->sendUserMessage($message, 'pminkler@csshealth.com');
+        if (\OC::$server->getConfig()->getSystemValue('hipchat_notify', false)) {
+            $notifier = new Notifier(\OC::$server->getConfig()->getSystemValue('hipchat_token', null));
+            if ($notifier !== null) {
+                $calendar = $this->getCalendarById($calendarId);
+                $principal = explode('principals/users/', $calendar['principaluri'])[1];
+                date_default_timezone_set('America/New_York');
+                $message_text = "<p>An appointment has been made for you on your {$calendar['{DAV:}displayname']} calendar!</p><b>" .
+                    date('Y-m-d', $extraData['firstOccurence']) .
+                    ' from ' . date('H:i', $extraData['firstOccurence']) . ' to ' . date('H:i', $extraData['lastOccurence']) . '</b>';
+                $message = [
+                    'from' => 'Ownpathfinder',
+                    'message_format' => 'html',
+                    'color' => 'purple',
+                    'notify' => true,
+                    'message' => $message_text
+                ];
+//                $notifier->sendUserMessage($message, $principal);
+                $notifier->sendUserMessage($message, 'pminkler@csshealth.com');
+            }
         }
 
         $this->addChange($calendarId, $objectUri, 1);
