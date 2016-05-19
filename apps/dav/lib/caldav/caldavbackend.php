@@ -687,8 +687,10 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
             if ($notifier !== null) {
                 $calendar = $this->getCalendarById($calendarId);
                 $principal = explode('principals/users/', $calendar['principaluri'])[1];
+                $calendar_url = 'https://' . gethostname() . \OC::$WEBROOT;
                 date_default_timezone_set('America/New_York');
-                $message_text = "<p>An appointment has been made for you on your {$calendar['{DAV:}displayname']} calendar!</p><b>" .
+
+                $message_text = "<p>An appointment has been made for you on your <a href='$calendar_url'>{$calendar['{DAV:}displayname']} calendar</a>!</p><b>" .
                     date('Y-m-d', $extraData['firstOccurence']) .
                     ' from ' . date('H:i', $extraData['firstOccurence']) . ' to ' . date('H:i', $extraData['lastOccurence']) . '</b>';
                 $message = [
