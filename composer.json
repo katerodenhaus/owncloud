@@ -4,6 +4,5 @@
     "jakub-onderka/php-console-highlighter": "^0.3.2"
   },
   "require": {
-    "gorkalaucirica/hipchat-v2-api-client": "^1.5"
   }
 }

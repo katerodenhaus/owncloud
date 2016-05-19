@@ -22,8 +22,8 @@
 
 namespace OCA\DAV\CalDAV;
 
-use Hipchat\Notifier;
 use OC\Encryption\CalCrypt;
+use OC\Hipchat\Messenger;
 use OCA\DAV\DAV\Sharing\IShareable;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCA\DAV\Connector\Sabre\Principal;
@@ -797,8 +797,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     {
         // Send Hipchat message to user
         if (\OC::$server->getConfig()->getSystemValue('hipchat_notify', false)) {
-            $notifier = new Notifier(\OC::$server->getConfig()->getSystemValue('hipchat_token', null));
-            if ($notifier !== null) {
+            $messenger = new Messenger(\OC::$server->getConfig()->getSystemValue('hipchat_token', null));
+            if ($messenger !== null) {
                 $calendar = $this->getCalendarById($calendarId);
                 $principal = explode('principals/users/', $calendar['principaluri'])[1];
                 $message_text = str_replace(
@@ -815,7 +815,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
                 ];
 
 //                $notifier->sendUserMessage($message, $principal);
-                $notifier->sendUserMessage($message, 'pminkler@csshealth.com');
+                $messenger->sendUserMessage($message, 'pminkler@csshealth.com');
             }
         }
     }
