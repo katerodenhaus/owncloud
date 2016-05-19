@@ -790,8 +790,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     /**
      * Notifies the calendar principal via Hipchat with a given message
      *
-     * @param $calendarId   The calendar owned by the principal you want to message
-     * @param $message_text The message to send
+     * @param $calendarId   int    The calendar owned by the principal you want to message
+     * @param $message_text string The message to send
      */
     private function notifyCalendarPrincipal($calendarId, $message_text)
     {
