@@ -690,31 +690,6 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         return '"' . $extraData['etag'] . '"';
     }
 
-    private function notifyCalendarPrincipal($calendarId, $message_text)
-    {
-        // Send Hipchat message to user
-        if (\OC::$server->getConfig()->getSystemValue('hipchat_notify', false)) {
-            $notifier = new Notifier(\OC::$server->getConfig()->getSystemValue('hipchat_token', null));
-            if ($notifier !== null) {
-                $calendar = $this->getCalendarById($calendarId);
-                $principal = explode('principals/users/', $calendar['principaluri'])[1];
-                $message_text = str_replace('{{calendar_url}}', 'https://' . gethostname() . \OC::$WEBROOT, $message_text);
-                $message_text = str_replace('{{calendar_name}}', $calendar['{DAV:}displayname'], $message_text);
-
-                $message = [
-                    'from' => 'Ownpathfinder',
-                    'message_format' => 'html',
-                    'color' => 'purple',
-                    'notify' => true,
-                    'message' => $message_text
-                ];
-
-//                $notifier->sendUserMessage($message, $principal);
-                $notifier->sendUserMessage($message, 'pminkler@csshealth.com');
-            }
-        }
-    }
-
     /**
      * Parses some information from calendar objects, used for optimized
      * calendar-queries.
@@ -809,6 +784,33 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     {
         $encryptQuery = new CalCrypt($query);
         return $encryptQuery->encryptData($values);
+    }
+
+    private function notifyCalendarPrincipal($calendarId, $message_text)
+    {
+        // Send Hipchat message to user
+        if (\OC::$server->getConfig()->getSystemValue('hipchat_notify', false)) {
+            $notifier = new Notifier(\OC::$server->getConfig()->getSystemValue('hipchat_token', null));
+            if ($notifier !== null) {
+                $calendar = $this->getCalendarById($calendarId);
+                $principal = explode('principals/users/', $calendar['principaluri'])[1];
+                $message_text = str_replace(
+                    ['{{calendar_url}}', '{{calendar_name}}'],
+                    ['https://' . gethostname() . \OC::$WEBROOT, $calendar['{DAV:}displayname']],
+                    $message_text);
+
+                $message = [
+                    'from' => 'Ownpathfinder',
+                    'message_format' => 'html',
+                    'color' => 'purple',
+                    'notify' => true,
+                    'message' => $message_text
+                ];
+
+//                $notifier->sendUserMessage($message, $principal);
+                $notifier->sendUserMessage($message, 'pminkler@csshealth.com');
+            }
+        }
     }
 
     public function getCalendarById($calendarId)
