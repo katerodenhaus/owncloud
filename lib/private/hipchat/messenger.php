@@ -1,6 +1,6 @@
 <?php
 /**
- * HipchatNotifier.php
+ * messenger.php
  * User: PMinkler
  * Date: 5/18/2016
  * Time: 6:22 PM
