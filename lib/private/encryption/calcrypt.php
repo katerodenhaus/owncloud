@@ -8,9 +8,7 @@
 
 namespace OC\Encryption;
 
-use OC\OCS\Exception;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-
 
 /**
  * Class CssCrypt
@@ -20,11 +18,7 @@ class CalCrypt
     /**
      * @var array The fields we want to encrypt
      */
-    private $encrypted_fields = [
-        'calendardata',
-        'calendarData',
-        'password'
-    ];
+    private $encrypted_fields = [];
     /**
      * @var string The key used to encrypt the data
      */
@@ -45,6 +39,11 @@ class CalCrypt
     {
         $this->data = $data;
         $this->key = \OC::$server->getConfig()->getSystemValue('encrypt_key');
+        $this->encrypted_fields = [
+            'calendardata',
+            'calendarData',
+            'password'
+        ];
 
         if ($this->key === '') {
             $logger = \OC::$server->getLogger();
@@ -65,8 +64,8 @@ class CalCrypt
         $columns = [];
         foreach ($this->data->getQueryParts()['select'] as $column) {
             // Unquoting column names
-            $column = str_replace("`", "", $column);
-            if (in_array($column, $this->encrypted_fields)) {
+            $column = str_replace('`', '', $column);
+            if (in_array($column, $this->encrypted_fields, true)) {
                 $column = $this->data->createFunction("AES_DECRYPT($column, '$this->key') AS $column");
             }
 
@@ -87,7 +86,7 @@ class CalCrypt
     {
         $encrypted_values = [];
         foreach ($values as $column => $value) {
-            if (in_array($column, $this->encrypted_fields)) {
+            if (in_array($column, $this->encrypted_fields, true)) {
                 $encrypted_values[$column] = $this->data->createFunction("AES_ENCRYPT('$value', '$this->key')");
             } else {
                 $encrypted_values[$column] = $this->data->createNamedParameter($value);
@@ -107,7 +106,7 @@ class CalCrypt
     public function updateEncrypted(array $values)
     {
         foreach ($values as $column => $value) {
-            if (in_array($column, $this->encrypted_fields)) {
+            if (in_array($column, $this->encrypted_fields, true)) {
                 $this->data->set($column, $this->data->createFunction("AES_ENCRYPT('$value', '$this->key')"));
             } else {
                 $this->data->set($column, $this->data->createNamedParameter($value));
