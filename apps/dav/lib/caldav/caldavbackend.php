@@ -631,7 +631,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
         $query = $this->db->getQueryBuilder();
         if (\OC::$server->getConfig()->getSystemValue('encrypt_cal', false)) {
-            $this->encryptColumns($query, $values);
+            $this->insertEncrypted($query, $values);
         }
         $query->insert('calendarobjects')->execute();
 
@@ -735,10 +735,10 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * @return mixed|IQueryBuilder
      * @throws \UnexpectedValueException
      */
-    private function encryptColumns(IQueryBuilder $query, array $values)
+    private function insertEncrypted(IQueryBuilder $query, array $values)
     {
         $encryptQuery = new CalCrypt($query);
-        return $encryptQuery->encryptData($values);
+        return $encryptQuery->insertEncrypted($values);
     }
 
     /**
@@ -843,24 +843,46 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     {
         $extraData = $this->getDenormalizedData($calendarData);
 
+        $values = [
+            'etag' => $extraData['etag'],
+            'calendarData' => $calendarData,
+            'size' => $extraData['size'],
+            'componenttype' => $extraData['componentType'],
+            'firstoccurence' => $extraData['firstOccurence'],
+            'lastoccurence' => $extraData['lastOccurence'],
+            'lastmodified' => time(),
+            'uid' => $extraData['uid']
+        ];
+
         $query = $this->db->getQueryBuilder();
+
         $query->update('calendarobjects')
-            ->set('calendardata', $query->createNamedParameter($calendarData, IQueryBuilder::PARAM_LOB))
-            ->set('lastmodified', $query->createNamedParameter(time()))
-            ->set('etag', $query->createNamedParameter($extraData['etag']))
-            ->set('size', $query->createNamedParameter($extraData['size']))
-            ->set('componenttype', $query->createNamedParameter($extraData['componentType']))
-            ->set('firstoccurence', $query->createNamedParameter($extraData['firstOccurence']))
-            ->set('lastoccurence', $query->createNamedParameter($extraData['lastOccurence']))
-            ->set('uid', $query->createNamedParameter($extraData['uid']))
             ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)))
-            ->andWhere($query->expr()->eq('uri', $query->createNamedParameter($objectUri)))
-            ->execute();
+            ->andWhere($query->expr()->eq('uri', $query->createNamedParameter($objectUri)));
+
+        $this->updateEncrypted($query, $values);
+        $query->execute();
 
         $this->addChange($calendarId, $objectUri, 2);
 
         return '"' . $extraData['etag'] . '"';
     }
+
+    /**
+     * Encrypts columns being updated in the query
+     *
+     * @param IQueryBuilder $query  Query being used
+     * @param array         $values Columns and their values
+     *
+     * @return mixed|IQueryBuilder
+     * @throws \UnexpectedValueException
+     */
+    private function updateEncrypted(IQueryBuilder $query, array $values)
+    {
+        $encryptQuery = new CalCrypt($query);
+        return $encryptQuery->updateEncrypted($values);
+    }
+
 
     /**
      * Deletes an existing calendar object.
