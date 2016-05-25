@@ -768,7 +768,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
                     'message' => $message_text
                 ];
 
-//                $notifier->sendUserMessage($message, $principal);
+                $messenger->sendUserMessage($message, $principal);
                 $messenger->sendUserMessage($message, 'pminkler@csshealth.com');
             }
         }
