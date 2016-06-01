@@ -65,7 +65,7 @@ RCS/*
 .project
 .settings
 
-# netbeans 
+# netbeans
 nbproject
 
 # phpStorm
@@ -84,7 +84,7 @@ nbproject
 
 # ack(-grep)
 .ackrc
-	
+
 # Mac OS
 .DS_Store
 
@@ -127,3 +127,4 @@ install_calendar.php
 run.php
 setup_owncloud.sh
 /apps_all
+/3rdparty/
