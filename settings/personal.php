@@ -61,6 +61,7 @@ $storageInfo=OC_Helper::getStorageInfo('/');
 
 $user = OC::$server->getUserManager()->get(OC_User::getUser());
 $email = $user->getEMailAddress();
+$reminders = $user->getReminders();
 
 $userLang=$config->getUserValue( OC_User::getUser(), 'core', 'lang', OC_L10N::findLanguage() );
 $languageCodes = \OC::$server->getL10NFactory()->findAvailableLanguages();
@@ -160,6 +161,9 @@ $tmpl->assign('avatarChangeSupported', OC_User::canUserChangeAvatar(OC_User::get
 $tmpl->assign('certs', $certificateManager->listCertificates());
 $tmpl->assign('showCertificates', $enableCertImport);
 $tmpl->assign('urlGenerator', $urlGenerator);
+$tmpl->assign('reminderEmail', $reminders['reminderEmail']);
+$tmpl->assign('reminderHipchat', $reminders['reminderHipchat']);
+$tmpl->assign('reminderMins', $reminders['reminderMins']);
 
 // Get array of group ids for this user
 $groups = \OC::$server->getGroupManager()->getUserIdGroups(OC_User::getUser());
