@@ -1,17 +1,17 @@
 <?php
 /**
- * @author Arthur Schiwon <blizzz@owncloud.com>
- * @author Bart Visscher <bartv@thisnet.nl>
- * @author Björn Schießle <schiessle@owncloud.com>
- * @author Joas Schilling <nickvergessen@owncloud.com>
- * @author Jörn Friedrich Dreyer <jfd@butonic.de>
- * @author Lukas Reschke <lukas@owncloud.com>
- * @author Morris Jobke <hey@morrisjobke.de>
- * @author Robin Appelman <icewind@owncloud.com>
- * @author Thomas Müller <thomas.mueller@tmit.eu>
+ * @author    Arthur Schiwon <blizzz@owncloud.com>
+ * @author    Bart Visscher <bartv@thisnet.nl>
+ * @author    Björn Schießle <schiessle@owncloud.com>
+ * @author    Joas Schilling <nickvergessen@owncloud.com>
+ * @author    Jörn Friedrich Dreyer <jfd@butonic.de>
+ * @author    Lukas Reschke <lukas@owncloud.com>
+ * @author    Morris Jobke <hey@morrisjobke.de>
+ * @author    Robin Appelman <icewind@owncloud.com>
+ * @author    Thomas Müller <thomas.mueller@tmit.eu>
  *
  * @copyright Copyright (c) 2016, ownCloud, Inc.
- * @license AGPL-3.0
+ * @license   AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
@@ -38,56 +38,51 @@ use OCP\IUser;
 use OCP\IConfig;
 use OCP\UserInterface;
 
-class User implements IUser {
+class User implements IUser
+{
 	/** @var string $uid */
 	private $uid;
-
 	/** @var string $displayName */
 	private $displayName;
-
 	/** @var UserInterface $backend */
 	private $backend;
-
 	/** @var bool $enabled */
 	private $enabled;
-
 	/** @var Emitter|Manager $emitter */
 	private $emitter;
-
 	/** @var string $home */
 	private $home;
-
 	/** @var int $lastLogin */
 	private $lastLogin;
-
 	/** @var \OCP\IConfig $config */
 	private $config;
-
 	/** @var IAvatarManager */
 	private $avatarManager;
-
 	/** @var IURLGenerator */
 	private $urlGenerator;
+	/** @var array */
+	private $reminders;
 
 	/**
-	 * @param string $uid
-	 * @param UserInterface $backend
+	 * @param string            $uid
+	 * @param UserInterface     $backend
 	 * @param \OC\Hooks\Emitter $emitter
-	 * @param IConfig|null $config
-	 * @param IURLGenerator $urlGenerator
+	 * @param IConfig|null      $config
+	 * @param IURLGenerator     $urlGenerator
 	 */
-	public function __construct($uid, $backend, $emitter = null, IConfig $config = null, $urlGenerator = null) {
-		$this->uid = $uid;
+	public function __construct($uid, $backend, $emitter = null, IConfig $config = null, $urlGenerator = null)
+	{
+		$this->uid     = $uid;
 		$this->backend = $backend;
 		$this->emitter = $emitter;
-		if(is_null($config)) {
+		if (is_null($config)) {
 			$config = \OC::$server->getConfig();
 		}
-		$this->config = $config;
+		$this->config       = $config;
 		$this->urlGenerator = $urlGenerator;
-		$enabled = $this->config->getUserValue($uid, 'core', 'enabled', 'true');
-		$this->enabled = ($enabled === 'true');
-		$this->lastLogin = $this->config->getUserValue($uid, 'login', 'lastLogin', 0);
+		$enabled            = $this->config->getUserValue($uid, 'core', 'enabled', 'true');
+		$this->enabled      = ($enabled === 'true');
+		$this->lastLogin    = $this->config->getUserValue($uid, 'login', 'lastLogin', 0);
 		if (is_null($this->urlGenerator)) {
 			$this->urlGenerator = \OC::$server->getURLGenerator();
 		}
@@ -98,7 +93,8 @@ class User implements IUser {
 	 *
 	 * @return string
 	 */
-	public function getUID() {
+	public function getUID()
+	{
 		return $this->uid;
 	}
 
@@ -107,7 +103,8 @@ class User implements IUser {
 	 *
 	 * @return string
 	 */
-	public function getDisplayName() {
+	public function getDisplayName()
+	{
 		if (!isset($this->displayName)) {
 			$displayName = '';
 			if ($this->backend and $this->backend->implementsActions(\OC_User_Backend::GET_DISPLAYNAME)) {
@@ -124,6 +121,7 @@ class User implements IUser {
 				$this->displayName = $this->uid;
 			}
 		}
+
 		return $this->displayName;
 	}
 
@@ -131,9 +129,11 @@ class User implements IUser {
 	 * set the displayname for the user
 	 *
 	 * @param string $displayName
+	 *
 	 * @return bool
 	 */
-	public function setDisplayName($displayName) {
+	public function setDisplayName($displayName)
+	{
 		$displayName = trim($displayName);
 		if ($this->backend->implementsActions(\OC_User_Backend::SET_DISPLAYNAME) && !empty($displayName)) {
 			$result = $this->backend->setDisplayName($this->uid, $displayName);
@@ -141,6 +141,7 @@ class User implements IUser {
 				$this->displayName = $displayName;
 				$this->triggerChange('displayName', $displayName);
 			}
+
 			return $result !== false;
 		} else {
 			return false;
@@ -148,14 +149,54 @@ class User implements IUser {
 	}
 
 	/**
+	 * Set the reminders for the user
+	 *
+	 * @param string $reminderEmail
+	 * @param string $reminderHipchat
+	 * @param string $reminderMins
+	 *
+	 * @return bool
+	 * @throws \OCP\PreConditionNotMetException
+	 * @internal param array $options
+	 */
+	public function setReminders($reminderEmail, $reminderHipchat, $reminderMins)
+	{
+		// If minutes is set to nothing, set to 15
+		$reminderMins = $reminderMins === '' ? '15' : $reminderMins;
+
+		$this->config->setUserValue($this->uid, 'calendar', 'reminderEmail', $reminderEmail);
+		$this->config->setUserValue($this->uid, 'calendar', 'reminderHipchat', $reminderHipchat);
+		$this->config->setUserValue($this->uid, 'calendar', 'reminderMins', $reminderMins);
+
+		return true;
+	}
+
+	/**
+	 * Gets the reminders for the user
+     * 
+	 * @return array
+	 * @throws \OCP\PreConditionNotMetException
+	 */
+	public function getReminders()
+	{
+		$reminders['reminderEmail'] = $this->config->getUserValue($this->uid, 'calendar', 'reminderEmail');
+		$reminders['reminderHipchat'] = $this->config->getUserValue($this->uid, 'calendar', 'reminderHipchat');
+		$reminders['reminderMins'] = $this->config->getUserValue($this->uid, 'calendar', 'reminderMins');
+
+		return $reminders;
+	}
+
+	/**
 	 * set the email address of the user
 	 *
 	 * @param string|null $mailAddress
+	 *
 	 * @return void
 	 * @since 9.0.0
 	 */
-	public function setEMailAddress($mailAddress) {
-		if($mailAddress === '') {
+	public function setEMailAddress($mailAddress)
+	{
+		if ($mailAddress === '') {
 			$this->config->deleteUserValue($this->uid, 'settings', 'email');
 		} else {
 			$this->config->setUserValue($this->uid, 'settings', 'email', $mailAddress);
@@ -169,14 +210,16 @@ class User implements IUser {
 	 *
 	 * @return int
 	 */
-	public function getLastLogin() {
+	public function getLastLogin()
+	{
 		return $this->lastLogin;
 	}
 
 	/**
 	 * updates the timestamp of the most recent login of this user
 	 */
-	public function updateLastLoginTimestamp() {
+	public function updateLastLoginTimestamp()
+	{
 		$this->lastLogin = time();
 		\OC::$server->getConfig()->setUserValue(
 			$this->uid, 'login', 'lastLogin', $this->lastLogin);
@@ -187,9 +230,10 @@ class User implements IUser {
 	 *
 	 * @return bool
 	 */
-	public function delete() {
+	public function delete()
+	{
 		if ($this->emitter) {
-			$this->emitter->emit('\OC\User', 'preDelete', array($this));
+			$this->emitter->emit('\OC\User', 'preDelete', [$this]);
 		}
 		$result = $this->backend->deleteUser($this->uid);
 		if ($result) {
@@ -214,8 +258,9 @@ class User implements IUser {
 		}
 
 		if ($this->emitter) {
-			$this->emitter->emit('\OC\User', 'postDelete', array($this));
+			$this->emitter->emit('\OC\User', 'postDelete', [$this]);
 		}
+
 		return !($result === false);
 	}
 
@@ -224,17 +269,20 @@ class User implements IUser {
 	 *
 	 * @param string $password
 	 * @param string $recoveryPassword for the encryption app to reset encryption keys
+	 *
 	 * @return bool
 	 */
-	public function setPassword($password, $recoveryPassword = null) {
+	public function setPassword($password, $recoveryPassword = null)
+	{
 		if ($this->emitter) {
-			$this->emitter->emit('\OC\User', 'preSetPassword', array($this, $password, $recoveryPassword));
+			$this->emitter->emit('\OC\User', 'preSetPassword', [$this, $password, $recoveryPassword]);
 		}
 		if ($this->backend->implementsActions(\OC_User_Backend::SET_PASSWORD)) {
 			$result = $this->backend->setPassword($this->uid, $password);
 			if ($this->emitter) {
-				$this->emitter->emit('\OC\User', 'postSetPassword', array($this, $password, $recoveryPassword));
+				$this->emitter->emit('\OC\User', 'postSetPassword', [$this, $password, $recoveryPassword]);
 			}
+
 			return !($result === false);
 		} else {
 			return false;
@@ -246,7 +294,8 @@ class User implements IUser {
 	 *
 	 * @return string
 	 */
-	public function getHome() {
+	public function getHome()
+	{
 		if (!$this->home) {
 			if ($this->backend->implementsActions(\OC_User_Backend::GET_HOME) and $home = $this->backend->getHome($this->uid)) {
 				$this->home = $home;
@@ -256,6 +305,7 @@ class User implements IUser {
 				$this->home = \OC::$SERVERROOT . '/data/' . $this->uid;
 			}
 		}
+
 		return $this->home;
 	}
 
@@ -264,10 +314,12 @@ class User implements IUser {
 	 *
 	 * @return string
 	 */
-	public function getBackendClassName() {
-		if($this->backend instanceof \OCP\IUserBackend) {
+	public function getBackendClassName()
+	{
+		if ($this->backend instanceof \OCP\IUserBackend) {
 			return $this->backend->getBackendName();
 		}
+
 		return get_class($this->backend);
 	}
 
@@ -276,10 +328,12 @@ class User implements IUser {
 	 *
 	 * @return bool
 	 */
-	public function canChangeAvatar() {
+	public function canChangeAvatar()
+	{
 		if ($this->backend->implementsActions(\OC_User_Backend::PROVIDE_AVATAR)) {
 			return $this->backend->canChangeAvatar($this->uid);
 		}
+
 		return true;
 	}
 
@@ -288,7 +342,8 @@ class User implements IUser {
 	 *
 	 * @return bool
 	 */
-	public function canChangePassword() {
+	public function canChangePassword()
+	{
 		return $this->backend->implementsActions(\OC_User_Backend::SET_PASSWORD);
 	}
 
@@ -297,10 +352,12 @@ class User implements IUser {
 	 *
 	 * @return bool
 	 */
-	public function canChangeDisplayName() {
+	public function canChangeDisplayName()
+	{
 		if ($this->config->getSystemValue('allow_user_to_change_display_name') === false) {
 			return false;
 		}
+
 		return $this->backend->implementsActions(\OC_User_Backend::SET_DISPLAYNAME);
 	}
 
@@ -309,7 +366,8 @@ class User implements IUser {
 	 *
 	 * @return bool
 	 */
-	public function isEnabled() {
+	public function isEnabled()
+	{
 		return $this->enabled;
 	}
 
@@ -318,9 +376,10 @@ class User implements IUser {
 	 *
 	 * @param bool $enabled
 	 */
-	public function setEnabled($enabled) {
+	public function setEnabled($enabled)
+	{
 		$this->enabled = $enabled;
-		$enabled = ($enabled) ? 'true' : 'false';
+		$enabled       = ($enabled) ? 'true' : 'false';
 		$this->config->setUserValue($this->uid, 'core', 'enabled', $enabled);
 	}
 
@@ -330,7 +389,8 @@ class User implements IUser {
 	 * @return string|null
 	 * @since 9.0.0
 	 */
-	public function getEMailAddress() {
+	public function getEMailAddress()
+	{
 		return $this->config->getUserValue($this->uid, 'settings', 'email', null);
 	}
 
@@ -340,11 +400,13 @@ class User implements IUser {
 	 * @return string
 	 * @since 9.0.0
 	 */
-	public function getQuota() {
+	public function getQuota()
+	{
 		$quota = $this->config->getUserValue($this->uid, 'files', 'quota', 'default');
-		if($quota === 'default') {
+		if ($quota === 'default') {
 			$quota = $this->config->getAppValue('files', 'default_quota', 'none');
 		}
+
 		return $quota;
 	}
 
@@ -352,11 +414,13 @@ class User implements IUser {
 	 * set the users' quota
 	 *
 	 * @param string $quota
+	 *
 	 * @return void
 	 * @since 9.0.0
 	 */
-	public function setQuota($quota) {
-		if($quota !== 'none' and $quota !== 'default') {
+	public function setQuota($quota)
+	{
+		if ($quota !== 'none' and $quota !== 'default') {
 			$quota = OC_Helper::computerFileSize($quota);
 			$quota = OC_Helper::humanFileSize($quota);
 		}
@@ -368,17 +432,19 @@ class User implements IUser {
 	 * get the avatar image if it exists
 	 *
 	 * @param int $size
+	 *
 	 * @return IImage|null
 	 * @since 9.0.0
 	 */
-	public function getAvatarImage($size) {
+	public function getAvatarImage($size)
+	{
 		// delay the initialization
 		if (is_null($this->avatarManager)) {
 			$this->avatarManager = \OC::$server->getAvatarManager();
 		}
 
 		$avatar = $this->avatarManager->getAvatar($this->uid);
-		$image = $avatar->get(-1);
+		$image  = $avatar->get(-1);
 		if ($image) {
 			return $image;
 		}
@@ -392,17 +458,21 @@ class User implements IUser {
 	 * @return string
 	 * @since 9.0.0
 	 */
-	public function getCloudId() {
-		$uid = $this->getUID();
+	public function getCloudId()
+	{
+		$uid    = $this->getUID();
 		$server = $this->urlGenerator->getAbsoluteURL('/');
-		return $uid . '@' . rtrim( $this->removeProtocolFromUrl($server), '/');
+
+		return $uid . '@' . rtrim($this->removeProtocolFromUrl($server), '/');
 	}
 
 	/**
 	 * @param string $url
+	 *
 	 * @return string
 	 */
-	private function removeProtocolFromUrl($url) {
+	private function removeProtocolFromUrl($url)
+	{
 		if (strpos($url, 'https://') === 0) {
 			return substr($url, strlen('https://'));
 		} else if (strpos($url, 'http://') === 0) {
@@ -412,10 +482,10 @@ class User implements IUser {
 		return $url;
 	}
 
-	public function triggerChange($feature, $value = null) {
+	public function triggerChange($feature, $value = null)
+	{
 		if ($this->emitter) {
-			$this->emitter->emit('\OC\User', 'changeUser', array($this, $feature, $value));
+			$this->emitter->emit('\OC\User', 'changeUser', [$this, $feature, $value]);
 		}
 	}
-
 }

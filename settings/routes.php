@@ -49,6 +49,7 @@ $application->registerRoutes($this, [
 		['name' => 'AppSettings#changeExperimentalConfigState', 'url' => '/settings/apps/experimental', 'verb' => 'POST'],
 		['name' => 'SecuritySettings#trustedDomains', 'url' => '/settings/admin/security/trustedDomains', 'verb' => 'POST'],
 		['name' => 'Users#setDisplayName', 'url' => '/settings/users/{username}/displayName', 'verb' => 'POST'],
+		['name' => 'Users#setReminders', 'url' => '/settings/users/{username}/reminders', 'verb' => 'POST'],
 		['name' => 'Users#setMailAddress', 'url' => '/settings/users/{id}/mailAddress', 'verb' => 'PUT'],
 		['name' => 'Users#stats', 'url' => '/settings/users/stats', 'verb' => 'GET'],
 		['name' => 'LogSettings#setLogLevel', 'url' => '/settings/admin/log/level', 'verb' => 'POST'],
@@ -87,7 +88,7 @@ $this->create('settings_users_changepassword', '/settings/users/changepassword')
 	->post()
 	->action('OC\Settings\ChangePassword\Controller', 'changeUserPassword');
 $this->create('settings_ajax_changegorupname', '/settings/ajax/changegroupname.php')
-	->actionInclude('settings/ajax/changegroupname.php');	
+	->actionInclude('settings/ajax/changegroupname.php');
 // personal
 $this->create('settings_personal_changepassword', '/settings/personal/changepassword')
 	->post()
