@@ -603,4 +603,27 @@
             </index>
         </declaration>
     </table>
+
+    <table>
+        <name>*dbprefix*reminders</name>
+        <declaration>
+            <field>
+                <name>event_uri</name>
+                <type>text</type>
+                <length>65</length>
+            </field>
+            <field>
+                <name>instance</name>
+                <type>integer</type>
+                <length>11</length>
+            </field>
+            <index>
+                <name>event_uri</name>
+                <unique>true</unique>
+                <field>
+                    <name>event_uri</name>
+                </field>
+            </index>
+        </declaration>
+    </table>
 </database>
