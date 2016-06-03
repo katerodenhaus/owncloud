@@ -746,6 +746,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      *
      * @param $calendarId   int    The calendar owned by the principal you want to message
      * @param $message_text string The message to send
+     *
+     * @throws \InvalidArgumentException
      */
     private function notifyCalendarPrincipal($calendarId, $message_text)
     {
@@ -755,6 +757,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
             if ($messenger !== null) {
                 $calendar = $this->getCalendarById($calendarId);
                 $principal = explode('principals/users/', $calendar['principaluri'])[1];
+                $principal = str_replace('.css', '.com', $principal);
                 $message_text = str_replace(
                     ['{{calendar_url}}', '{{calendar_name}}'],
                     ['https://' . gethostname() . \OC::$WEBROOT, $calendar['{DAV:}displayname']],
@@ -769,7 +772,6 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
                 ];
 
                 $messenger->sendUserMessage($message, $principal);
-                $messenger->sendUserMessage($message, 'pminkler@csshealth.com');
             }
         }
     }
