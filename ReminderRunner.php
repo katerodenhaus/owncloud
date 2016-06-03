@@ -521,11 +521,12 @@ class ReminderRunner
     {
         $eventTitle  = $calendarData['eventTitle']->getValue();
         $messageText = "You have an upcoming appointment, $eventTitle, starting $timeDifference";
+        $email = str_replace('.css', '.com', $user['userid']);
         if ($reminders['reminderHipchat'] === 'on') {
-            $this->hipchatNotification($user['userid'], $messageText);
+            $this->hipchatNotification($email, $messageText);
         }
         if ($reminders['reminderEmail'] === 'on') {
-            $this->emailNotification($user['userid'], $messageText);
+            $this->emailNotification($email, $messageText);
         }
     }
 
@@ -562,7 +563,7 @@ class ReminderRunner
             'notify'         => true,
             'message'        => $messagetext
         ];
-        $messenger->sendUserMessage($message, 'pminkler@csshealth.com');
+        $messenger->sendUserMessage($message, $user);
     }
 
     /**
@@ -576,7 +577,7 @@ class ReminderRunner
     private function emailNotification($user, $messagetext)
     {
         $headers = 'From: ' . \OC::$server->getConfig()->getSystemValue('email_from_name');
-        mail('pminkler@csshealth.com', 'Upcoming appointment', $messagetext, $headers);
+        mail($user, 'Upcoming appointment', $messagetext, $headers);
     }
 
     /**
