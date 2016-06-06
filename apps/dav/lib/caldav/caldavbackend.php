@@ -59,12 +59,6 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * to a unix timestamp.
      */
     const MAX_DATE = '2038-01-01';
-    public $hostMap = [
-        'alpha-cal1.internal.csshealth.com' => 'alpha-calendar.csshealth.com',
-        'beta-cal1.internal.csshealth.com'  => 'beta-calendar.csshealth.com',
-        'rc-cal1.internal.csshealth.com'    => 'rc-calendar.csshealth.com',
-        'cal1.internal.csshealth.com'       => 'calendar.csshealth.com'
-    ];
     /**
      * List of CalDAV properties, and how they map to database field names
      * Add your own properties by simply adding on to this array.
@@ -827,15 +821,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      */
     public function getHostMap()
     {
-        return $this->hostMap;
-    }
-
-    /**
-     * @param array $hostMap
-     */
-    public function setHostMap($hostMap)
-    {
-        $this->hostMap = $hostMap;
+        return \OC::$server->getConfig()->getSystemValue('host_map');
     }
 
     /**
