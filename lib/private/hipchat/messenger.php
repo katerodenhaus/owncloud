@@ -26,22 +26,18 @@ class Messenger
      * @var RoomAPI The Room API
      */
     private $roomAPI;
-
     /**
      * @var UserAPI The User API
      */
     private $userAPI;
-
     /**
      * @var OAuth2 Authetication object
      */
     private $auth;
-
     /**
      * @var Client Client object
      */
     private $client;
-
     /**
      * @var string Token used to authenticate
      */
@@ -175,6 +171,7 @@ class Messenger
             throw new \InvalidArgumentException('Room must be a string');
         } else {
             $room = $this->getRoomAPI()->getRoom(rawurlencode($room));
+
             return $room->getId();
         }
     }
@@ -200,6 +197,9 @@ class Messenger
                 \OC_Log_Owncloud::write('core', $e->getMessage(), Util::ERROR);
             }
             catch (ClientException $e) {
+                \OC_Log_Owncloud::write('core', $e->getMessage(), Util::ERROR);
+            }
+            catch (\Throwable $e) {
                 \OC_Log_Owncloud::write('core', $e->getMessage(), Util::ERROR);
             }
             catch (\Exception $e) {
