@@ -7,12 +7,15 @@
  */
 namespace OC\Hipchat;
 
+use Buzz\Exception\ClientException;
 use GorkaLaucirica\HipchatAPIv2Client\API\RoomAPI;
 use GorkaLaucirica\HipchatAPIv2Client\API\UserAPI;
 use GorkaLaucirica\HipchatAPIv2Client\Auth\OAuth2;
 use GorkaLaucirica\HipchatAPIv2Client\Client;
+use GorkaLaucirica\HipchatAPIv2Client\Exception\RequestException;
 use GorkaLaucirica\HipchatAPIv2Client\Model\Message;
 use GorkaLaucirica\HipchatAPIv2Client\Model\Room;
+use OCP\Util;
 
 /**
  * Class Messenger is the entrance class to the HipchatAPIClient
@@ -190,7 +193,18 @@ class Messenger
         if ($user === null || $message === null) {
             throw new \InvalidArgumentException('Must provide a room and a message');
         } else {
-            $this->getUserAPI()->privateMessageUser($user, new Message($message));
+            try {
+                $this->getUserAPI()->privateMessageUser($user, new Message($message));
+            }
+            catch (RequestException $e) {
+                \OC_Log_Owncloud::write('core', $e->getMessage(), Util::ERROR);
+            }
+            catch (ClientException $e) {
+                \OC_Log_Owncloud::write('core', $e->getMessage(), Util::ERROR);
+            }
+            catch (\Exception $e) {
+                \OC_Log_Owncloud::write('core', $e->getMessage(), Util::ERROR);
+            }
         }
     }
 
