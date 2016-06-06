@@ -60,7 +60,12 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * to a unix timestamp.
      */
     const MAX_DATE = '2038-01-01';
-
+    public $hostMap = [
+        'alpha-cal1.internal.csshealth.com' => 'alpha-calendar.csshealth.com',
+        'beta-cal1.internal.csshealth.com'  => 'beta-calendar.csshealth.com',
+        'rc-cal1.internal.csshealth.com'    => 'rc-calendar.csshealth.com',
+        'cal1.internal.csshealth.com'       => 'calendar.csshealth.com'
+    ];
     /**
      * List of CalDAV properties, and how they map to database field names
      * Add your own properties by simply adding on to this array.
@@ -76,7 +81,6 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         '{http://apple.com/ns/ical/}calendar-order' => 'calendarorder',
         '{http://apple.com/ns/ical/}calendar-color' => 'calendarcolor',
     ];
-
     /**
      * List of subscription properties, and how they map to database field names.
      *
@@ -91,17 +95,14 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         '{http://calendarserver.org/ns/}subscribed-strip-alarms' => 'stripalarms',
         '{http://calendarserver.org/ns/}subscribed-strip-attachments' => 'stripattachments',
     ];
-
     /**
      * @var IDBConnection
      */
     private $db;
-
     /**
      * @var Backend
      */
     private $sharingBackend;
-
     /**
      * @var Principal
      */
@@ -755,12 +756,14 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         if (\OC::$server->getConfig()->getSystemValue('hipchat_notify', false)) {
             $messenger = new Messenger(\OC::$server->getConfig()->getSystemValue('hipchat_token', null));
             if ($messenger !== null) {
-                $calendar = $this->getCalendarById($calendarId);
-                $principal = explode('principals/users/', $calendar['principaluri'])[1];
-                $principal = str_replace('.css', '.com', $principal);
+                $calendar     = $this->getCalendarById($calendarId);
+                $principal    = explode('principals/users/', $calendar['principaluri'])[1];
+                $principal    = str_replace('.css', '.com', $principal);
+                $hostname     = array_key_exists(gethostname(), $this->getHostMap()) ?
+                    $this->getHostMap()[gethostname()] : gethostname();
                 $message_text = str_replace(
                     ['{{calendar_url}}', '{{calendar_name}}'],
-                    ['https://' . gethostname() . \OC::$WEBROOT, $calendar['{DAV:}displayname']],
+                    ['https://' . $hostname . \OC::$WEBROOT, $calendar['{DAV:}displayname']],
                     $message_text);
 
                 $message = [
@@ -819,6 +822,22 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         }
 
         return $calendar;
+    }
+
+    /**
+     * @return array
+     */
+    public function getHostMap()
+    {
+        return $this->hostMap;
+    }
+
+    /**
+     * @param array $hostMap
+     */
+    public function setHostMap($hostMap)
+    {
+        $this->hostMap = $hostMap;
     }
 
     /**
