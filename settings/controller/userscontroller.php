@@ -677,6 +677,8 @@ class UsersController extends Controller
     }
 
     /**
+     * @NoAdminRequired
+     * @NoSubadminRequired
      * Set the reminders for a user
      *
      * @param string $username
