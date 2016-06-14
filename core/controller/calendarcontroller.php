@@ -22,8 +22,11 @@
 
 namespace OC\Core\Controller;
 
+use OC\DB\Connection;
 use \OCP\AppFramework\Controller;
 use \OCP\AppFramework\Http\JSONResponse;
+use OCP\IConfig;
+use OCP\IDBConnection;
 use \OCP\IRequest;
 
 class CalendarController extends Controller
@@ -32,22 +35,19 @@ class CalendarController extends Controller
      * @var IConfig
      */
     private $config;
-    /**
-     * @var IUserSession
-     */
-    private $userSession;
+    private $connection;
 
     /**
-     * @param string       $appName
-     * @param IRequest     $request an instance of the request
-     * @param IUserSession $userSession
-     * @param IConfig      $config
+     * @param string   $appName Application name
+     * @param IRequest $request an instance of the request
+     *
+     * @internal param IUserSession $userSession
+     * @internal param IConfig $config
      */
-    public function __construct($appName, IRequest $request, IConfig $config)
+    public function __construct($appName, IRequest $request)
     {
         parent::__construct($appName, $request);
-        $this->config      = $config;
-        $this->userSession = $userSession;
+        $this->setConnection(\OC::$server->getDatabaseConnection());
     }
 
     /**
@@ -59,10 +59,35 @@ class CalendarController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function getCalendars()
+    public function getCalendarUsers()
     {
+        // Only bother looking up people who want reminders
+        $userReminderQuery = $this->getConnection()->getQueryBuilder();
+        $userReminderQuery
+            ->select(['uid', 'displayname'])
+            ->from('users')
+            ->where($userReminderQuery->expr()->neq('uid', $userReminderQuery->createNamedParameter('admin')))
+            ->groupBy('uid');
+        $userStmt = $userReminderQuery->execute();
+
         return new JSONResponse([
-                                    'value' => 'stupid',
+                                    $userStmt->fetchAll()
                                 ]);
+    }
+
+    /**
+     * @return IDBConnection
+     */
+    public function getConnection()
+    {
+        return $this->connection;
+    }
+
+    /**
+     * @param mixed $connection
+     */
+    public function setConnection($connection)
+    {
+        $this->connection = $connection;
     }
 }

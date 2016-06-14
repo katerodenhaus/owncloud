@@ -44,7 +44,7 @@ $application->registerRoutes($this, [
 		['name' => 'avatar#postAvatar', 'url' => '/avatar/', 'verb' => 'POST'],
 		// Calendars
 		[
-			'name' => 'calendar#getCalendars',
+			'name' => 'calendar#getCalendarUsers',
 			'url'  => '/v1/calendars',
 			'verb' => 'GET'
 		]

@@ -106,8 +106,7 @@ class Application extends App {
 		$container->registerService('CalendarController', function (SimpleContainer $c) {
 			return new CalendarController(
 				$c->query('AppName'),
-				$c->query('Request'),
-				$c->query('Defaults')
+				$c->query('Request')
 			);;
 		});
 		$container->registerService('Config', function(SimpleContainer $c) {
