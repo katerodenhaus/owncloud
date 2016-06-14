@@ -60,9 +60,7 @@ class CalendarController extends Controller
             ->groupBy('uid');
         $userStmt = $userReminderQuery->execute();
 
-        return new JSONResponse([
-                                    $userStmt->fetchAll()
-                                ]);
+        return new JSONResponse($userStmt->fetchAll());
     }
 
     /**
