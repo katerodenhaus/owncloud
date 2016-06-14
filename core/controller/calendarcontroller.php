@@ -22,19 +22,19 @@
 
 namespace OC\Core\Controller;
 
-use OC\DB\Connection;
 use \OCP\AppFramework\Controller;
 use \OCP\AppFramework\Http\JSONResponse;
-use OCP\IConfig;
 use OCP\IDBConnection;
 use \OCP\IRequest;
 
+/**
+ * Class CalendarController
+ */
 class CalendarController extends Controller
 {
     /**
-     * @var IConfig
+     * @var IDBConnection Database connection
      */
-    private $config;
     private $connection;
 
     /**
@@ -51,7 +51,17 @@ class CalendarController extends Controller
     }
 
     /**
-     * get a config value
+     * @param mixed $connection Database connection
+     *
+     * @return void
+     */
+    private function setConnection($connection)
+    {
+        $this->connection = $connection;
+    }
+
+    /**
+     * Get a config value
      *
      * @return JSONResponse
      *
@@ -78,16 +88,8 @@ class CalendarController extends Controller
     /**
      * @return IDBConnection
      */
-    public function getConnection()
+    private function getConnection()
     {
         return $this->connection;
-    }
-
-    /**
-     * @param mixed $connection
-     */
-    public function setConnection($connection)
-    {
-        $this->connection = $connection;
     }
 }
