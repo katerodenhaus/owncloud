@@ -49,7 +49,7 @@ try {
 	// force language as given in the http request
 	\OC::$server->getL10NFactory()->setLanguageFromRequest();
 
-	OC::$server->getRouter()->match('/ocs'.\OC::$server->getRequest()->getRawPathInfo());
+	OC::$server->getRouter()->match(\OC::$server->getRequest()->getRawPathInfo());
 } catch (ResourceNotFoundException $e) {
 	OC_API::setContentType();
 	OC_OCS::notFound();
