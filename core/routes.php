@@ -42,6 +42,12 @@ $application->registerRoutes($this, [
 		['name' => 'avatar#postCroppedAvatar', 'url' => '/avatar/cropped', 'verb' => 'POST'],
 		['name' => 'avatar#getTmpAvatar', 'url' => '/avatar/tmp', 'verb' => 'GET'],
 		['name' => 'avatar#postAvatar', 'url' => '/avatar/', 'verb' => 'POST'],
+		// Calendars
+		[
+			'name' => 'calendar#getCalendars',
+			'url'  => '/v1/calendars',
+			'verb' => 'GET'
+		]
 	]
 ]);
 

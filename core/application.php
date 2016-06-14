@@ -28,6 +28,7 @@ namespace OC\Core;
 
 use OC\AppFramework\Utility\SimpleContainer;
 use OC\AppFramework\Utility\TimeFactory;
+use OC\Core\Controller\CalendarController;
 use \OCP\AppFramework\App;
 use OC\Core\Controller\LostController;
 use OC\Core\Controller\UserController;
@@ -101,6 +102,13 @@ class Application extends App {
 		});
 		$container->registerService('UserManager', function(SimpleContainer $c) {
 			return $c->query('ServerContainer')->getUserManager();
+		});
+		$container->registerService('CalendarController', function (SimpleContainer $c) {
+			return new CalendarController(
+				$c->query('AppName'),
+				$c->query('Request'),
+				$c->query('Defaults')
+			);;
 		});
 		$container->registerService('Config', function(SimpleContainer $c) {
 			return $c->query('ServerContainer')->getConfig();
