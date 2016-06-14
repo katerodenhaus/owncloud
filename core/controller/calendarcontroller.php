@@ -51,14 +51,13 @@ class CalendarController extends Controller
      */
     public function getCalendarUsers()
     {
-        // Only bother looking up people who want reminders
-        $userReminderQuery = $this->getConnection()->getQueryBuilder();
-        $userReminderQuery
+        $query = $this->getConnection()->getQueryBuilder();
+        $query
             ->select(['uid', 'displayname'])
             ->from('users')
-            ->where($userReminderQuery->expr()->neq('uid', $userReminderQuery->createNamedParameter('admin')))
+            ->where($query->expr()->neq('uid', $query->createNamedParameter('admin')))
             ->groupBy('uid');
-        $userStmt = $userReminderQuery->execute();
+        $userStmt = $query->execute();
 
         return new JSONResponse($userStmt->fetchAll());
     }
