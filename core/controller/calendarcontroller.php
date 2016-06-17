@@ -79,6 +79,7 @@ class CalendarController extends Controller
             ->select(['uid', 'displayname'])
             ->from('users')
             ->where($query->expr()->neq('uid', $query->createNamedParameter('admin')))
+            ->andWhere($query->expr()->neq('uid', $query->createNamedParameter('css_admin')))
             ->groupBy('uid');
         $userStmt          = $query->execute();
         $result['users']   = $userStmt->fetchAll();
