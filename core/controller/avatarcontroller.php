@@ -99,12 +99,14 @@ class AvatarController extends Controller {
 	}
 
 	/**
+	 * @PublicPage
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
 	 * @param string $userId
 	 * @param int $size
-	 * @return DataResponse|DataDisplayResponse
+	 * 
+*@return DataResponse|DataDisplayResponse
 	 */
 	public function getAvatar($userId, $size) {
 		if ($size > 2048) {
