@@ -37,10 +37,12 @@ use Sabre\CalDAV\Plugin;
 use Sabre\CalDAV\Xml\Property\ScheduleCalendarTransp;
 use Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet;
 use Sabre\DAV;
+use Sabre\DAV\Exception\BadRequest;
 use Sabre\DAV\Exception\Forbidden;
 use Sabre\HTTP\URLUtil;
 use Sabre\VObject\DateTimeParser;
 use Sabre\VObject\Reader;
+use Sabre\VObject\Recur\EventIterator;
 use Sabre\VObject\RecurrenceIterator;
 
 /**
@@ -437,16 +439,20 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      * used/fetched to determine these numbers. If both are specified the
      * amount of times this is needed is reduced by a great degree.
      *
-     * @param mixed $calendarId
+     * @param mixed $calendarId Calendar ID
+     * @param bool  $past       Whether or not to include events that have already passed
      *
      * @return array
      */
-    public function getCalendarObjects($calendarId)
+    public function getCalendarObjects($calendarId, $past = true)
     {
         $query = $this->db->getQueryBuilder();
         $query->select(['id', 'uri', 'lastmodified', 'etag', 'calendarid', 'size', 'componenttype'])
             ->from('calendarobjects')
             ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)));
+        if (!$past) {
+            $query->andWhere($query->expr()->gt('lastoccurence', $query->createNamedParameter(time())));
+        }
         $stmt = $query->execute();
 
         $result = [];
@@ -1062,6 +1068,88 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         }
 
         return null;
+    }
+
+    /**
+     * @param $calendarData
+     *
+     * @return array
+     * @throws BadRequest
+     */
+    public function getAllEventData($calendarData)
+    {
+        $vObject        = Reader::read($calendarData);
+        $componentType  = null;
+        $component      = null;
+        $firstOccurence = null;
+        $lastOccurence  = null;
+        $uid            = null;
+        $timezone       = '';
+        $occurrences    = [];
+
+        foreach ($vObject->getComponents() as $component) {
+            if ($component->name === 'VTIMEZONE') {
+                $timezone = $component->children()[0]->getValue();
+            }
+        }
+
+        foreach ($vObject->getComponents() as $component) {
+            if ($component->name !== 'VTIMEZONE') {
+                $componentType = $component->name;
+                $uid           = (string)$component->UID;
+                break;
+            }
+        }
+        if (!$componentType) {
+            throw new BadRequest(
+                'Calendar objects must have a VJOURNAL, VEVENT or VTODO component'
+            );
+        }
+        if ($componentType === 'VEVENT' && $component->DTSTART) {
+            $firstOccurence = $component->DTSTART->getDateTime()->getTimestamp();
+            // Finding the last occurence is a bit harder
+            if (!isset($component->RRULE)) {
+                if (isset($component->DTEND)) {
+                    $lastOccurence = $component->DTEND->getDateTime()->getTimestamp();
+                } elseif (isset($component->DURATION)) {
+                    $endDate = clone $component->DTSTART->getDateTime();
+                    $endDate->add(DateTimeParser::parse($component->DURATION->getValue()));
+                    $lastOccurence = $endDate->getTimestamp();
+                } elseif (!$component->DTSTART->hasTime()) {
+                    $endDate = clone $component->DTSTART->getDateTime();
+                    $endDate->modify('+1 day');
+                    $lastOccurence = $endDate->getTimestamp();
+                } else {
+                    $lastOccurence = $firstOccurence;
+                }
+            } else {
+                $iterator = new EventIterator($vObject, (string)$component->UID);
+                $maxDate  = new \DateTime(date('Y-m-d', strtotime('+6 months', time())));
+                $end      = $iterator->getDtEnd();
+                while ($iterator->valid() && $end < $maxDate) {
+                    $end           = $iterator->getDtEnd();
+                    $occurrences[] = [
+                        'start'   => $iterator->getDtStart(),
+                        'end'     => $iterator->getDtEnd(),
+                        'counter' => $iterator->key()
+                    ];
+                    $iterator->next();
+                }
+                $lastOccurence = $end->getTimestamp();
+            }
+        }
+
+        return [
+            'etag'           => md5($calendarData),
+            'size'           => strlen($calendarData),
+            'componentType'  => $componentType,
+            'firstOccurence' => $firstOccurence === null ? null : max(0, $firstOccurence),
+            'occurrences'    => $occurrences,
+            'lastOccurence'  => $lastOccurence,
+            'uid'            => $uid,
+            'eventTitle'     => array_values($component->select('SUMMARY'))[0]->getValue(),
+            'timezone'       => $timezone
+        ];
     }
 
     /**
