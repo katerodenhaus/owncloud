@@ -277,7 +277,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
      */
     public function createCalendar($principalUri, $calendarUri, array $properties)
     {
-        $values = [
+        $principalUri = $this->convertPrincipal($principalUri, true);
+        $values       = [
             'principaluri' => $principalUri,
             'uri'          => $calendarUri,
             'synctoken'    => 1,
@@ -1195,6 +1196,52 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
             '{http://sabredav.org/ns}sync-token'                          => $row['synctoken'] ? $row['synctoken'] : '0',
             '{' . Plugin::NS_CALDAV . '}supported-calendar-component-set' => new SupportedCalendarComponentSet($components),
             '{' . Plugin::NS_CALDAV . '}schedule-calendar-transp'         => new ScheduleCalendarTransp($row['transparent'] ? 'transparent' : 'opaque'),
+        ];
+
+        foreach ($this->propertyMap as $xmlName => $dbName) {
+            $calendar[$xmlName] = $row[$dbName];
+        }
+
+        return $calendar;
+    }
+
+    /**
+     * @param string $principal   Calendar owner
+     * @param string $displayName Display name
+     *
+     * @return array|null
+     */
+    public function getCalendarByName($principal, $displayName)
+    {
+        $principal = $this->convertPrincipal($principal, true);
+        $fields    = array_values($this->propertyMap);
+        $fields[]  = 'id';
+        $fields[]  = 'uri';
+        $fields[]  = 'synctoken';
+        $fields[]  = 'components';
+        $fields[]  = 'principaluri';
+        $fields[]  = 'transparent';
+
+        // Making fields a comma-delimited list
+        $query = $this->db->getQueryBuilder();
+        $query->select($fields)->from('calendars')
+            ->where($query->expr()->eq('displayname', $query->createNamedParameter($displayName)))
+            ->andWhere($query->expr()->eq('principaluri', $query->createNamedParameter($principal)))
+            ->setMaxResults(1);
+        $stmt = $query->execute();
+
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $stmt->closeCursor();
+        if ($row === false) {
+            return null;
+        }
+
+        $calendar = [
+            'id'           => $row['id'],
+            'uri'          => $row['uri'],
+            'principaluri' => $row['principaluri'],
+            'getctag'      => 'http://sabre.io/ns/sync/' . ($row['synctoken'] ? $row['synctoken'] : '0'),
+            'sync-token'   => $row['synctoken'] ? $row['synctoken'] : '0'
         ];
 
         foreach ($this->propertyMap as $xmlName => $dbName) {

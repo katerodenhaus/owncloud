@@ -9,6 +9,9 @@ use \OCP\AppFramework\Controller;
 use \OCP\AppFramework\Http\JSONResponse;
 use OCP\IDBConnection;
 use \OCP\IRequest;
+use OCP\Security\ISecureRandom;
+use Sabre\DAV\Exception;
+use Sabre\VObject\Component\VCalendar;
 
 /**
  * Class CalendarController
@@ -19,6 +22,9 @@ class CalendarController extends Controller
      * @var IDBConnection Database connection
      */
     private $connection;
+    /**
+     * @var CalDavBackend The CalDAV Backend
+     */
     private $calDavBackend;
 
     /**
@@ -32,16 +38,17 @@ class CalendarController extends Controller
     {
         parent::__construct($appName, $request);
         $this->setConnection(\OC::$server->getDatabaseConnection());
-        $this->setCalDavBackend(new CalDavBackend(
-                                    $this->getConnection(),
-                                    new Principal(
-                                        new Manager(),
-                                        new \OC\Group\Manager(
-                                            new Manager()
-                                        ),
-                                        'principals'
-                                    )
-                                )
+        $this->setCalDavBackend(
+            new CalDavBackend(
+                $this->getConnection(),
+                new Principal(
+                    new Manager(),
+                    new \OC\Group\Manager(
+                        new Manager()
+                    ),
+                    'principals'
+                )
+            )
         );
     }
 
@@ -159,10 +166,153 @@ class CalendarController extends Controller
     }
 
     /**
-     * @param mixed $calDavBackend
+     * @param mixed $calDavBackend The CalDAV Backend from Owncloud
+     *
+     * @return void
      */
     public function setCalDavBackend($calDavBackend)
     {
         $this->calDavBackend = $calDavBackend;
+    }
+
+    /**
+     * Gets all calendars that a user has
+     *
+     * @param string $user The user to get calendars for, "foo@bar.com"
+     * @param string $name The calendar name
+     *
+     * @PublicPage
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse
+     */
+    public function getUserCalendarByName($user, $name)
+    {
+        try {
+            $return['calendars'] = $this->getCalDavBackend()->getCalendarByName($user, $name);
+            $return['success']   = true;
+        } catch (Exception $e) {
+            $return['success'] = false;
+        }
+
+        return new JSONResponse($return);
+    }
+
+    /**
+     * Creates a calendar object on a user's calendar with a specific link
+     *
+     * @param string $user     The user, "foo@bar.com"
+     * @param string $calendar The calendar's exact display name
+     * @param int    $start    Timestamp of event's start
+     * @param int    $end      Timestamp of event's end
+     * @param string $link     The encrypted link
+     *
+     * @PublicPage
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse
+     * @throws \UnexpectedValueException
+     * @throws \Sabre\DAV\Exception\BadRequest
+     * @throws \InvalidArgumentException
+     */
+    public function bookUserEvent($user, $calendar, $start, $end, $link)
+    {
+        $return = [];
+
+        $calendarObject = $this->getCalDavBackend()->getCalendarByName($user, $calendar);
+        $calendarData   = $this->generateCalendarData($start, $end, $link);
+        if ($calendarObject === null) {
+            // Calendar was not found.  Attempt to create it first.
+            try {
+                $calendarObject['id'] = $this->getCalDavBackend()->createCalendar($user, $calendar, []);
+            } catch (\Exception $e) {
+                $return['error']   = "Could not create calendar for user: $user, " . $e->getMessage();
+                $return['success'] = false;
+            }
+        }
+
+        // Calendar was found, add the event
+        try {
+            $return['etag']    = $this->getCalDavBackend()->createCalendarObject(
+                $calendarObject['id'],
+                $this->getUniqueID(),
+                $calendarData
+            );
+            $return['success'] = true;
+        } catch (\InvalidArgumentException $e) {
+            $return['error']   = 'Could not create event: ' . $e->getMessage();
+            $return['success'] = false;
+        } catch (\UnexpectedValueException $e) {
+            $return['error']   = 'Could not create event: ' . $e->getMessage();
+            $return['success'] = false;
+        } catch (Exception\BadRequest $e) {
+            $return['error']   = 'Could not create event: ' . $e->getMessage();
+            $return['success'] = false;
+        }
+
+        return new JSONResponse($return);
+    }
+
+    /**
+     * Generates the iCAL Calendar Data
+     *
+     * @param int    $start Timestamp of start
+     * @param int    $end   Timestamp of end
+     * @param string $link  Link URL
+     *
+     * @return string
+     */
+    private function generateCalendarData($start, $end, $link)
+    {
+        // Get DateTimes sorted
+        $startDate = new \DateTime();
+        $endDate   = new \DateTime();
+        $startDate->setTimestamp($start);
+        $endDate->setTimestamp($end);
+
+        // Get VCalendar made, then use it to create an event
+        $vCal          = new VCalendar();
+        $vCal->VERSION = '2.0';
+        $vEvent        = $vCal->createComponent('VEVENT');
+
+        // Event start
+        $vEvent->add('DTSTART');
+        $vEvent->DTSTART->setDateTime(
+            $startDate
+        );
+        $vEvent->DTSTART['VALUE'] = 'DATE-TIME';
+
+        // Event end
+        $vEvent->add('DTEND');
+        $vEvent->DTEND->setDateTime(
+            $endDate
+        );
+        $vEvent->DTEND['VALUE'] = 'DATE-TIME';
+
+        // Other required fields
+        $vEvent->{'UID'}     = $this->getUniqueID();
+        $vEvent->{'SUMMARY'} = 'Scheduled CMR';
+        $vEvent->{'TRANSP'}  = 'TRANSPARENT';
+        $vEvent->{'URL'}     = $link;
+        $vCal->add($vEvent);
+
+        return $vCal->serialize();
+    }
+
+    /**
+     * @param int $length Length of string to generate
+     *
+     * @return string
+     */
+    private function getUniqueID($length = 20)
+    {
+        return \OC::$server->getConfig()->getAppValue('calendar', 'uri_prefix') .
+        \OC::$server->getSecureRandom()->generate(
+            $length,
+            // Do not use dots and slashes as we use the value for file names
+            ISecureRandom::CHAR_DIGITS . ISecureRandom::CHAR_LOWER . ISecureRandom::CHAR_UPPER
+        );
     }
 }
