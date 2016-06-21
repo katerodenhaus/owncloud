@@ -48,7 +48,7 @@ $application->registerRoutes($this, [
         ['name' => 'calendar#getUserEvents', 'url' => '/v1/calendar/user/{user}/events/{range}', 'verb' => 'GET'],
         [
             'name' => 'calendar#bookUserEvent',
-            'url'  => '/v1/calendar/user/{user}/calendar/{calendar}/start/{start}/end/{end}/link/{link}',
+            'url'  => '/v1/calendar/user/{user}/calendar/{calendar}/start/{start}/end/{end}/link/',
             'verb' => 'POST'
         ],
         [

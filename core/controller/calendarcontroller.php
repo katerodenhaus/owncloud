@@ -206,7 +206,6 @@ class CalendarController extends Controller
      * @param string $calendar The calendar's exact display name
      * @param int    $start    Timestamp of event's start
      * @param int    $end      Timestamp of event's end
-     * @param string $link     The encrypted link
      *
      * @PublicPage
      * @NoAdminRequired
@@ -217,9 +216,10 @@ class CalendarController extends Controller
      * @throws \Sabre\DAV\Exception\BadRequest
      * @throws \InvalidArgumentException
      */
-    public function bookUserEvent($user, $calendar, $start, $end, $link)
+    public function bookUserEvent($user, $calendar, $start, $end)
     {
         $return = [];
+        $link   = $this->request->getParam('link');
 
         $calendarObject = $this->getCalDavBackend()->getCalendarByName($user, $calendar);
         $calendarData   = $this->generateCalendarData($start, $end, $link);
