@@ -200,6 +200,30 @@ class CalendarController extends Controller
     }
 
     /**
+     * Gets all calendars that a user has
+     *
+     * @param string $user The user to get calendars for, "foo@bar.com"
+     * @param string $name The calendar name
+     *
+     * @PublicPage
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse
+     */
+    public function getCalendarEventObjectByUid($uid)
+    {
+        try {
+            $return['event']   = $this->getCalDavBackend()->getCalendarObjectByUri($uid);
+            $return['success'] = true;
+        } catch (\UnexpectedValueException $e) {
+            $return['success'] = false;
+        }
+
+        return new JSONResponse($return);
+    }
+
+    /**
      * Creates a calendar object on a user's calendar with a specific link
      *
      * @param string $user     The user, "foo@bar.com"
@@ -233,13 +257,16 @@ class CalendarController extends Controller
             }
         }
 
-        // Calendar was found, add the event
+        // Calendar was found/made, add the event
         try {
+            $eventObjectID     = $this->getUniqueID();
             $return['etag']    = $this->getCalDavBackend()->createCalendarObject(
                 $calendarObject['id'],
-                $this->getUniqueID(),
-                $calendarData
+                $eventObjectID,
+                $calendarData,
+                $link
             );
+            $return['uri']     = $eventObjectID;
             $return['success'] = true;
         } catch (\InvalidArgumentException $e) {
             $return['error']   = 'Could not create event: ' . $e->getMessage();
@@ -316,3 +343,5 @@ class CalendarController extends Controller
         );
     }
 }
+
+
