@@ -25,119 +25,242 @@
  *
  * You should have received a copy of the GNU Affero General Public License, version 3,
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
  */
 
 use OC\Core\Application;
 
 $application = new Application();
-$application->registerRoutes($this, [
-    'routes' => [
-        ['name' => 'lost#email', 'url' => '/lostpassword/email', 'verb' => 'POST'],
-        ['name' => 'lost#resetform', 'url' => '/lostpassword/reset/form/{token}/{userId}', 'verb' => 'GET'],
-        ['name' => 'lost#setPassword', 'url' => '/lostpassword/set/{token}/{userId}', 'verb' => 'POST'],
-        ['name' => 'user#getDisplayNames', 'url' => '/displaynames', 'verb' => 'POST'],
-        ['name' => 'avatar#getAvatar', 'url' => '/avatar/{userId}/{size}', 'verb' => 'GET'],
-        ['name' => 'avatar#deleteAvatar', 'url' => '/avatar/', 'verb' => 'DELETE'],
-        ['name' => 'avatar#postCroppedAvatar', 'url' => '/avatar/cropped', 'verb' => 'POST'],
-        ['name' => 'avatar#getTmpAvatar', 'url' => '/avatar/tmp', 'verb' => 'GET'],
-        ['name' => 'avatar#postAvatar', 'url' => '/avatar/', 'verb' => 'POST'],
+$application->registerRoutes(
+    $this,
+    [
+        'routes' => [
+            ['name' => 'lost#email', 'url' => '/lostpassword/email', 'verb' => 'POST'],
+            ['name' => 'lost#resetform', 'url' => '/lostpassword/reset/form/{token}/{userId}', 'verb' => 'GET'],
+            ['name' => 'lost#setPassword', 'url' => '/lostpassword/set/{token}/{userId}', 'verb' => 'POST'],
+            ['name' => 'user#getDisplayNames', 'url' => '/displaynames', 'verb' => 'POST'],
+            ['name' => 'avatar#getAvatar', 'url' => '/avatar/{userId}/{size}', 'verb' => 'GET'],
+            ['name' => 'avatar#deleteAvatar', 'url' => '/avatar/', 'verb' => 'DELETE'],
+            ['name' => 'avatar#postCroppedAvatar', 'url' => '/avatar/cropped', 'verb' => 'POST'],
+            ['name' => 'avatar#getTmpAvatar', 'url' => '/avatar/tmp', 'verb' => 'GET'],
+            ['name' => 'avatar#postAvatar', 'url' => '/avatar/', 'verb' => 'POST'],
 
-        // Calendars
-        ['name' => 'calendar#getCalendarUsers', 'url' => '/v1/calendar/users', 'verb' => 'GET'],
-        ['name' => 'calendar#getUserEvents', 'url' => '/v1/calendar/user/{user}/events/{range}', 'verb' => 'GET'],
-        [
-            'name' => 'calendar#bookUserEvent',
-            'url'  => '/v1/calendar/user/{user}/calendar/{calendar}/start/{start}/end/{end}/link/',
-            'verb' => 'POST'
-        ],
-        [
-            'name'                                      =>
-                'calendar#getUserCalendarByName', 'url' => '/v1/calendar/user/{user}/calendar/{name}', 'verb' => 'GET'
-        ],
+            // Calendars
+            [
+                'name' => 'calendar#getCalendarUsers',
+                'url'  => '/v1/calendar/users',
+                'verb' => 'GET'
+            ],
+            [
+                'name' => 'calendar#getUserEvents',
+                'url'  => '/v1/calendar/user/{user}/events/{range}',
+                'verb' => 'GET'
+            ],
+            [
+                'name' => 'calendar#bookUserEvent',
+                'url'  => '/v1/calendar/user/{user}/calendar/{calendar}/start/{start}/end/{end}/link/',
+                'verb' => 'POST'
+            ],
+            [
+                'name' => 'calendar#getUserCalendarByName',
+                'url'  => '/v1/calendar/user/{user}/calendar/{name}', 'verb' => 'GET'
+            ],
+            [
+                'name' => 'calendar#getCalendarEventObjectByUid',
+                'url'  => '/v1/calendar/event/{uid}', 'verb' => 'GET'
+            ],
+        ]
     ]
-]);
+);
 
 // Post installation check
-
-/** @var $this OCP\Route\IRouter */
-// Core ajax actions
 // Search
-$this->create('search_ajax_search', '/core/search')
-    ->actionInclude('core/search/ajax/search.php');
+$this->create(
+    'search_ajax_search',
+    '/core/search'
+)
+     ->actionInclude('core/search/ajax/search.php');
 // AppConfig
-$this->create('core_ajax_appconfig', '/core/ajax/appconfig.php')
-    ->actionInclude('core/ajax/appconfig.php');
+$this->create(
+    'core_ajax_appconfig',
+    '/core/ajax/appconfig.php'
+)
+     ->actionInclude('core/ajax/appconfig.php');
 // Share
-$this->create('core_ajax_share', '/core/ajax/share.php')
-    ->actionInclude('core/ajax/share.php');
+$this->create(
+    'core_ajax_share',
+    '/core/ajax/share.php'
+)
+     ->actionInclude('core/ajax/share.php');
 // Tags
-$this->create('core_tags_tags', '/tags/{type}')
-    ->get()
-    ->action('OC\Core\Tags\Controller', 'getTags')
-    ->requirements(['type']);
-$this->create('core_tags_favorites', '/tags/{type}/favorites')
-    ->get()
-    ->action('OC\Core\Tags\Controller', 'getFavorites')
-    ->requirements(['type']);
-$this->create('core_tags_ids_for_tag', '/tags/{type}/ids')
-    ->get()
-    ->action('OC\Core\Tags\Controller', 'getIdsForTag')
-    ->requirements(['type']);
-$this->create('core_tags_favorite', '/tags/{type}/favorite/{id}/')
-    ->post()
-    ->action('OC\Core\Tags\Controller', 'favorite')
-    ->requirements(['type', 'id']);
-$this->create('core_tags_unfavorite', '/tags/{type}/unfavorite/{id}/')
-    ->post()
-    ->action('OC\Core\Tags\Controller', 'unFavorite')
-    ->requirements(['type', 'id']);
-$this->create('core_tags_tag', '/tags/{type}/tag/{id}/')
-    ->post()
-    ->action('OC\Core\Tags\Controller', 'tagAs')
-    ->requirements(['type', 'id']);
-$this->create('core_tags_untag', '/tags/{type}/untag/{id}/')
-    ->post()
-    ->action('OC\Core\Tags\Controller', 'unTag')
-    ->requirements(['type', 'id']);
-$this->create('core_tags_add', '/tags/{type}/add')
-    ->post()
-    ->action('OC\Core\Tags\Controller', 'addTag')
-    ->requirements(['type']);
-$this->create('core_tags_delete', '/tags/{type}/delete')
-    ->post()
-    ->action('OC\Core\Tags\Controller', 'deleteTags')
-    ->requirements(['type']);
+$this->create(
+    'core_tags_tags',
+    '/tags/{type}'
+)
+     ->get()
+     ->action(
+         'OC\Core\Tags\Controller',
+         'getTags'
+     )
+     ->requirements(['type']);
+$this->create(
+    'core_tags_favorites',
+    '/tags/{type}/favorites'
+)
+     ->get()
+     ->action(
+         'OC\Core\Tags\Controller',
+         'getFavorites'
+     )
+     ->requirements(['type']);
+$this->create(
+    'core_tags_ids_for_tag',
+    '/tags/{type}/ids'
+)
+     ->get()
+     ->action(
+         'OC\Core\Tags\Controller',
+         'getIdsForTag'
+     )
+     ->requirements(['type']);
+$this->create(
+    'core_tags_favorite',
+    '/tags/{type}/favorite/{id}/'
+)
+     ->post()
+     ->action(
+         'OC\Core\Tags\Controller',
+         'favorite'
+     )
+     ->requirements(['type', 'id']);
+$this->create(
+    'core_tags_unfavorite',
+    '/tags/{type}/unfavorite/{id}/'
+)
+     ->post()
+     ->action(
+         'OC\Core\Tags\Controller',
+         'unFavorite'
+     )
+     ->requirements(['type', 'id']);
+$this->create(
+    'core_tags_tag',
+    '/tags/{type}/tag/{id}/'
+)
+     ->post()
+     ->action(
+         'OC\Core\Tags\Controller',
+         'tagAs'
+     )
+     ->requirements(['type', 'id']);
+$this->create(
+    'core_tags_untag',
+    '/tags/{type}/untag/{id}/'
+)
+     ->post()
+     ->action(
+         'OC\Core\Tags\Controller',
+         'unTag'
+     )
+     ->requirements(['type', 'id']);
+$this->create(
+    'core_tags_add',
+    '/tags/{type}/add'
+)
+     ->post()
+     ->action(
+         'OC\Core\Tags\Controller',
+         'addTag'
+     )
+     ->requirements(['type']);
+$this->create(
+    'core_tags_delete',
+    '/tags/{type}/delete'
+)
+     ->post()
+     ->action(
+         'OC\Core\Tags\Controller',
+         'deleteTags'
+     )
+     ->requirements(['type']);
 // oC JS config
-$this->create('js_config', '/core/js/oc.js')
-    ->actionInclude('core/js/config.php');
+$this->create(
+    'js_config',
+    '/core/js/oc.js'
+)
+     ->actionInclude('core/js/config.php');
 // Routing
-$this->create('core_ajax_preview', '/core/preview')
-    ->actionInclude('core/ajax/preview.php');
-$this->create('core_ajax_preview', '/core/preview.png')
-    ->actionInclude('core/ajax/preview.php');
-$this->create('core_ajax_update', '/core/ajax/update.php')
-    ->actionInclude('core/ajax/update.php');
+$this->create(
+    'core_ajax_preview',
+    '/core/preview'
+)
+     ->actionInclude('core/ajax/preview.php');
+$this->create(
+    'core_ajax_preview',
+    '/core/preview.png'
+)
+     ->actionInclude('core/ajax/preview.php');
+$this->create(
+    'core_ajax_update',
+    '/core/ajax/update.php'
+)
+     ->actionInclude('core/ajax/update.php');
 
 // Sharing routes
-$this->create('files_sharing.sharecontroller.showShare', '/s/{token}')->action(function ($urlParams) {
-    $app = new \OCA\Files_Sharing\AppInfo\Application($urlParams);
-    $app->dispatch('ShareController', 'showShare');
-});
-$this->create('files_sharing.sharecontroller.authenticate', '/s/{token}/authenticate')->post()->action(function ($urlParams) {
-    $app = new \OCA\Files_Sharing\AppInfo\Application($urlParams);
-    $app->dispatch('ShareController', 'authenticate');
-});
-$this->create('files_sharing.sharecontroller.showAuthenticate', '/s/{token}/authenticate')->get()->action(function ($urlParams) {
-    $app = new \OCA\Files_Sharing\AppInfo\Application($urlParams);
-    $app->dispatch('ShareController', 'showAuthenticate');
-});
-$this->create('files_sharing.sharecontroller.downloadShare', '/s/{token}/download')->get()->action(function ($urlParams) {
-    $app = new \OCA\Files_Sharing\AppInfo\Application($urlParams);
-    $app->dispatch('ShareController', 'downloadShare');
-});
+$this->create(
+    'files_sharing.sharecontroller.showShare',
+    '/s/{token}'
+)->action(
+    function ($urlParams) {
+        $app = new \OCA\Files_Sharing\AppInfo\Application($urlParams);
+        $app->dispatch(
+            'ShareController',
+            'showShare'
+        );
+    }
+);
+$this->create(
+    'files_sharing.sharecontroller.authenticate',
+    '/s/{token}/authenticate'
+)->post()->action(
+    function ($urlParams) {
+        $app = new \OCA\Files_Sharing\AppInfo\Application($urlParams);
+        $app->dispatch(
+            'ShareController',
+            'authenticate'
+        );
+    }
+);
+$this->create(
+    'files_sharing.sharecontroller.showAuthenticate',
+    '/s/{token}/authenticate'
+)->get()->action(
+    function ($urlParams) {
+        $app = new \OCA\Files_Sharing\AppInfo\Application($urlParams);
+        $app->dispatch(
+            'ShareController',
+            'showAuthenticate'
+        );
+    }
+);
+$this->create(
+    'files_sharing.sharecontroller.downloadShare',
+    '/s/{token}/download'
+)->get()->action(
+    function ($urlParams) {
+        $app = new \OCA\Files_Sharing\AppInfo\Application($urlParams);
+        $app->dispatch(
+            'ShareController',
+            'downloadShare'
+        );
+    }
+);
 
 // used for heartbeat
-$this->create('heartbeat', '/heartbeat')->action(function () {
-    // do nothing
-});
+$this->create(
+    'heartbeat',
+    '/heartbeat'
+)->action(
+    function () {
+        // do nothing
+    }
+);

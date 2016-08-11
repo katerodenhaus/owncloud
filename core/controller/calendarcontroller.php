@@ -10,6 +10,7 @@ use \OCP\AppFramework\Http\JSONResponse;
 use OCP\IDBConnection;
 use \OCP\IRequest;
 use OCP\Security\ISecureRandom;
+use OCP\Util;
 use Sabre\DAV\Exception;
 use Sabre\VObject\Component\VCalendar;
 
@@ -36,7 +37,10 @@ class CalendarController extends Controller
      */
     public function __construct($appName, IRequest $request)
     {
-        parent::__construct($appName, $request);
+        parent::__construct(
+            $appName,
+            $request
+        );
         $this->setConnection(\OC::$server->getDatabaseConnection());
         $this->setCalDavBackend(
             new CalDavBackend(
@@ -85,8 +89,18 @@ class CalendarController extends Controller
         $query
             ->select(['uid', 'displayname'])
             ->from('users')
-            ->where($query->expr()->neq('uid', $query->createNamedParameter('admin')))
-            ->andWhere($query->expr()->neq('uid', $query->createNamedParameter('css_admin')))
+            ->where(
+                $query->expr()->neq(
+                    'uid',
+                    $query->createNamedParameter('admin')
+                )
+            )
+            ->andWhere(
+                $query->expr()->neq(
+                    'uid',
+                    $query->createNamedParameter('css_admin')
+                )
+            )
             ->groupBy('uid');
         $userStmt          = $query->execute();
         $result['users']   = $userStmt->fetchAll();
@@ -112,6 +126,15 @@ class CalendarController extends Controller
      */
     public function getUserEvents($user, $past = false)
     {
+        if (!$this->ensureUserExists($user)) {
+            return new JSONResponse(
+                [
+                    'events'  => [],
+                    'success' => false
+                ]
+            );
+        }
+
         // First, we have to get all calendars
         $calendars = $this->getCalDavBackend()->getCalendarsForUser($user);
 
@@ -121,14 +144,23 @@ class CalendarController extends Controller
         // passed
         $return_events = [];
         foreach ($calendars as $calendar) {
-            $events = $this->getCalDavBackend()->getCalendarObjects($calendar['id'], $past);
+            $events = $this->getCalDavBackend()->getCalendarObjects(
+                $calendar['id'],
+                $past
+            );
 
             // Finally we can iterate over the events and see which ones are in the range!
             foreach ($events as $event) {
-                $event = $this->getCalDavBackend()->getCalendarObject($calendar['id'], $event['uri']);
+                $event = $this->getCalDavBackend()->getCalendarObject(
+                    $calendar['id'],
+                    $event['uri']
+                );
 
                 // For this event object to be even slightly useful, we need to decypher the calendarData iCAL object
-                $event = array_merge($event, $this->getCalDavBackend()->getAllEventData($event['calendardata']));
+                $event = array_merge(
+                    $event,
+                    $this->getCalDavBackend()->getAllEventData($event['calendardata'])
+                );
 
                 // Is this recurring or not?
                 if (count($event['occurrences']) === 0) {
@@ -155,6 +187,32 @@ class CalendarController extends Controller
         ];
 
         return new JSONResponse($return);
+    }
+
+    /**
+     * Will create the user if it does not exist
+     *
+     * @param string $user The email address of the user
+     *
+     * @return bool Whether or not the user was created
+     */
+    private function ensureUserExists($user)
+    {
+        // If the user does not exist, create the user
+        if (!\OC::$server->getUserManager()->userExists($user)) {
+            $saml = new \OC_USER_SAML();
+            try {
+                return $saml->createUser($user);
+            } catch (\Exception $e) {
+                \OC_Log_Owncloud::write(
+                    'core',
+                    $e->getMessage(),
+                    Util::ERROR
+                );
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -189,10 +247,45 @@ class CalendarController extends Controller
      */
     public function getUserCalendarByName($user, $name)
     {
+        if (!$this->ensureUserExists($user)) {
+            return new JSONResponse(
+                [
+                    'calendars' => [],
+                    'success'   => false
+                ]
+            );
+        }
+
         try {
-            $return['calendars'] = $this->getCalDavBackend()->getCalendarByName($user, $name);
+            $return['calendars'] = $this->getCalDavBackend()->getCalendarByName(
+                $user,
+                $name
+            );
             $return['success']   = true;
         } catch (Exception $e) {
+            $return['success'] = false;
+        }
+
+        return new JSONResponse($return);
+    }
+
+    /**
+     * Gets all calendars that a user has
+     *
+     * @param string $uid The user to get calendars for, "foo@bar.com"
+     *
+     * @PublicPage
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse
+     */
+    public function getCalendarEventObjectByUid($uid)
+    {
+        try {
+            $return['event']   = $this->getCalDavBackend()->getCalendarObjectByUri($uid);
+            $return['success'] = true;
+        } catch (\UnexpectedValueException $e) {
             $return['success'] = false;
         }
 
@@ -218,28 +311,55 @@ class CalendarController extends Controller
      */
     public function bookUserEvent($user, $calendar, $start, $end)
     {
+        if (!$this->ensureUserExists($user)) {
+            $return['error']   = "Could not create user: $user";
+            $return['success'] = false;
+
+            return new JSONResponse(
+                [
+                    'error'   => "Could not create user: $user",
+                    'success' => false
+                ]
+            );
+        }
+
         $return = [];
         $link   = $this->request->getParam('link');
 
-        $calendarObject = $this->getCalDavBackend()->getCalendarByName($user, $calendar);
-        $calendarData   = $this->generateCalendarData($start, $end, $link);
+        // If the calendar doesn't exist, create it
+        $calendarObject = $this->getCalDavBackend()->getCalendarByName(
+            $user,
+            $calendar
+        );
+        $calendarData   = $this->generateCalendarData(
+            $start,
+            $end,
+            $link
+        );
         if ($calendarObject === null) {
             // Calendar was not found.  Attempt to create it first.
             try {
-                $calendarObject['id'] = $this->getCalDavBackend()->createCalendar($user, $calendar, []);
+                $calendarObject['id'] = $this->getCalDavBackend()->createCalendar(
+                    $user,
+                    $calendar,
+                    []
+                );
             } catch (\Exception $e) {
                 $return['error']   = "Could not create calendar for user: $user, " . $e->getMessage();
                 $return['success'] = false;
             }
         }
 
-        // Calendar was found, add the event
+        // Calendar was found/made, add the event
         try {
+            $eventObjectID     = $this->getUniqueID();
             $return['etag']    = $this->getCalDavBackend()->createCalendarObject(
                 $calendarObject['id'],
-                $this->getUniqueID(),
-                $calendarData
+                $eventObjectID,
+                $calendarData,
+                $link
             );
+            $return['uri']     = $eventObjectID;
             $return['success'] = true;
         } catch (\InvalidArgumentException $e) {
             $return['error']   = 'Could not create event: ' . $e->getMessage();
@@ -308,11 +428,16 @@ class CalendarController extends Controller
      */
     private function getUniqueID($length = 20)
     {
-        return \OC::$server->getConfig()->getAppValue('calendar', 'uri_prefix') .
-        \OC::$server->getSecureRandom()->generate(
-            $length,
-            // Do not use dots and slashes as we use the value for file names
-            ISecureRandom::CHAR_DIGITS . ISecureRandom::CHAR_LOWER . ISecureRandom::CHAR_UPPER
-        );
+        return \OC::$server->getConfig()->getAppValue(
+            'calendar',
+            'uri_prefix'
+        ) .
+               \OC::$server->getSecureRandom()->generate(
+                   $length,
+                   // Do not use dots and slashes as we use the value for file names
+                   ISecureRandom::CHAR_DIGITS . ISecureRandom::CHAR_LOWER . ISecureRandom::CHAR_UPPER
+               );
     }
 }
+
+
