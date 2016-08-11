@@ -165,8 +165,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         // Making fields a comma-delimited list
         $query = $this->db->getQueryBuilder();
         $query->select($fields)->from('calendars')
-            ->where($query->expr()->eq('principaluri', $query->createNamedParameter($principalUri)))
-            ->orderBy('calendarorder', 'ASC');
+              ->where($query->expr()->eq('principaluri', $query->createNamedParameter($principalUri)))
+              ->orderBy('calendarorder', 'ASC');
         $stmt = $query->execute();
 
         $calendars = [];
@@ -179,10 +179,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
             $calendar = [
                 'id'                                                          => $row['id'],
                 'uri'                                                         => $row['uri'],
-                'principaluri'                                                => $this->convertPrincipal(
-                    $row['principaluri'],
-                    false
-                ),
+                'principaluri'                                                => $this->convertPrincipal($row['principaluri'], false),
                 '{' . Plugin::NS_CALENDARSERVER . '}getctag'                  => 'http://sabre.io/ns/sync/'
                     . ($row['synctoken'] ? $row['synctoken'] : '0'),
                 '{http://sabredav.org/ns}sync-token'                          => $row['synctoken'] ? $row['synctoken'] : '0',
@@ -220,13 +217,13 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         $fields[] = 's.access';
         $query    = $this->db->getQueryBuilder();
         $result   = $query->select($fields)
-            ->from('dav_shares', 's')
-            ->join('s', 'calendars', 'a', $query->expr()->eq('s.resourceid', 'a.id'))
-            ->where($query->expr()->in('s.principaluri', $query->createParameter('principaluri')))
-            ->andWhere($query->expr()->eq('s.type', $query->createParameter('type')))
-            ->setParameter('type', 'calendar')
-            ->setParameter('principaluri', $principals, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
-            ->execute();
+                          ->from('dav_shares', 's')
+                          ->join('s', 'calendars', 'a', $query->expr()->eq('s.resourceid', 'a.id'))
+                          ->where($query->expr()->in('s.principaluri', $query->createParameter('principaluri')))
+                          ->andWhere($query->expr()->eq('s.type', $query->createParameter('type')))
+                          ->setParameter('type', 'calendar')
+                          ->setParameter('principaluri', $principals, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                          ->execute();
 
         while ($row = $result->fetch()) {
             list(, $name) = URLUtil::splitPath($row['principaluri']);
@@ -242,12 +239,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
                 'principaluri'                                                      => $principalUri,
                 '{' . Plugin::NS_CALENDARSERVER . '}getctag'                        => 'http://sabre.io/ns/sync/' . ($row['synctoken'] ? $row['synctoken'] : '0'),
                 '{http://sabredav.org/ns}sync-token'                                => $row['synctoken'] ? $row['synctoken'] : '0',
-                '{' . Plugin::NS_CALDAV . '}supported-calendar-component-set'       => new SupportedCalendarComponentSet(
-                    $components
-                ),
-                '{' . Plugin::NS_CALDAV . '}schedule-calendar-transp'               => new ScheduleCalendarTransp(
-                    $row['transparent'] ? 'transparent' : 'opaque'
-                ),
+                '{' . Plugin::NS_CALDAV . '}supported-calendar-component-set'       => new SupportedCalendarComponentSet($components),
+                '{' . Plugin::NS_CALDAV . '}schedule-calendar-transp'               => new ScheduleCalendarTransp($row['transparent'] ? 'transparent' : 'opaque'),
                 '{' . \OCA\DAV\DAV\Sharing\Plugin::NS_OWNCLOUD . '}owner-principal' => $row['principaluri'],
                 '{' . \OCA\DAV\DAV\Sharing\Plugin::NS_OWNCLOUD . '}read-only'       => (int)$row['access'] === Backend::ACCESS_READ,
             ];
@@ -473,8 +466,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     {
         $query = $this->db->getQueryBuilder();
         $query->select(['id', 'uri', 'lastmodified', 'etag', 'calendarid', 'size', 'componenttype'])
-            ->from('calendarobjects')
-            ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)));
+              ->from('calendarobjects')
+              ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)));
         if (!$past) {
             $query->andWhere($query->expr()->gt('lastoccurence', $query->createNamedParameter(time())));
         }
@@ -519,9 +512,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
         $query = $this->db->getQueryBuilder();
         $query->select(['id', 'uri', 'lastmodified', 'etag', 'calendarid', 'size', 'calendardata', 'componenttype'])
-            ->from('calendarobjects')
-            ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)))
-            ->andWhere($query->expr()->eq('uri', $query->createNamedParameter($objectUri)));
+              ->from('calendarobjects')
+              ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)))
+              ->andWhere($query->expr()->eq('uri', $query->createNamedParameter($objectUri)));
 
         if (\OC::$server->getConfig()->getSystemValue('encrypt_cal', false)) {
             $this->decryptColumns($query);
@@ -741,10 +734,10 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     {
         $query = $this->db->getQueryBuilder();
         $query->select(['id', 'uri', 'lastmodified', 'etag', 'calendarid', 'size', 'calendardata', 'componenttype'])
-            ->from('calendarobjects')
-            ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)))
-            ->andWhere($query->expr()->in('uri', $query->createParameter('uri')))
-            ->setParameter('uri', $uris, IQueryBuilder::PARAM_STR_ARRAY);
+              ->from('calendarobjects')
+              ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)))
+              ->andWhere($query->expr()->in('uri', $query->createParameter('uri')))
+              ->setParameter('uri', $uris, IQueryBuilder::PARAM_STR_ARRAY);
 
         $this->decryptColumns($query);
         $stmt = $query->execute();
@@ -994,8 +987,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         // Making fields a comma-delimited list
         $query = $this->db->getQueryBuilder();
         $query->select($fields)->from('calendars')
-            ->where($query->expr()->eq('id', $query->createNamedParameter($calendarId)))
-            ->setMaxResults(1);
+              ->where($query->expr()->eq('id', $query->createNamedParameter($calendarId)))
+              ->setMaxResults(1);
         $stmt = $query->execute();
 
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -1074,8 +1067,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         $query = $this->db->getQueryBuilder();
 
         $query->update('calendarobjects')
-            ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)))
-            ->andWhere($query->expr()->eq('uri', $query->createNamedParameter($objectUri)));
+              ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)))
+              ->andWhere($query->expr()->eq('uri', $query->createNamedParameter($objectUri)));
 
         $this->updateEncrypted($query, $values);
         $query->execute();
@@ -1206,8 +1199,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         }
         $query = $this->db->getQueryBuilder();
         $query->select($columns)
-            ->from('calendarobjects')
-            ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)));
+              ->from('calendarobjects')
+              ->where($query->expr()->eq('calendarid', $query->createNamedParameter($calendarId)));
 
         if (\OC::$server->getConfig()->getSystemValue('encrypt_cal', false)) {
             $this->decryptColumns($query);
@@ -1262,10 +1255,10 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
         $query = $this->db->getQueryBuilder();
         $query->selectAlias('c.uri', 'calendaruri')->selectAlias('co.uri', 'objecturi')
-            ->from('calendarobjects', 'co')
-            ->leftJoin('co', 'calendars', 'c', $query->expr()->eq('co.calendarid', 'c.id'))
-            ->where($query->expr()->eq('c.principaluri', $query->createNamedParameter($principalUri)))
-            ->andWhere($query->expr()->eq('co.uid', $query->createNamedParameter($uid)));
+              ->from('calendarobjects', 'co')
+              ->leftJoin('co', 'calendars', 'c', $query->expr()->eq('co.calendarid', 'c.id'))
+              ->where($query->expr()->eq('c.principaluri', $query->createNamedParameter($principalUri)))
+              ->andWhere($query->expr()->eq('co.uid', $query->createNamedParameter($uid)));
 
         $stmt = $query->execute();
 
@@ -1295,9 +1288,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         // Making fields a comma-delimited list
         $query = $this->db->getQueryBuilder();
         $query->select($fields)->from('calendars')
-            ->where($query->expr()->eq('uri', $query->createNamedParameter($uri)))
-            ->andWhere($query->expr()->eq('principaluri', $query->createNamedParameter($principal)))
-            ->setMaxResults(1);
+              ->where($query->expr()->eq('uri', $query->createNamedParameter($uri)))
+              ->andWhere($query->expr()->eq('principaluri', $query->createNamedParameter($principal)))
+              ->setMaxResults(1);
         $stmt = $query->execute();
 
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -1350,9 +1343,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
         // Making fields a comma-delimited list
         $query = $this->db->getQueryBuilder();
         $query->select($fields)->from('calendars')
-            ->where($query->expr()->eq('displayname', $query->createNamedParameter($displayName)))
-            ->andWhere($query->expr()->eq('principaluri', $query->createNamedParameter($principal)))
-            ->setMaxResults(1);
+              ->where($query->expr()->eq('displayname', $query->createNamedParameter($displayName)))
+              ->andWhere($query->expr()->eq('principaluri', $query->createNamedParameter($principal)))
+              ->setMaxResults(1);
         $stmt = $query->execute();
 
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -1541,9 +1534,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
         $query = $this->db->getQueryBuilder();
         $query->select($fields)
-            ->from('calendarsubscriptions')
-            ->where($query->expr()->eq('principaluri', $query->createNamedParameter($principalUri)))
-            ->orderBy('calendarorder', 'asc');
+              ->from('calendarsubscriptions')
+              ->where($query->expr()->eq('principaluri', $query->createNamedParameter($principalUri)))
+              ->orderBy('calendarorder', 'asc');
         $stmt = $query->execute();
 
         $subscriptions = [];
@@ -1660,12 +1653,12 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
 
             $query = $this->db->getQueryBuilder();
             $query->update('calendarsubscriptions')
-                ->set('lastmodified', $query->createNamedParameter(time()));
+                  ->set('lastmodified', $query->createNamedParameter(time()));
             foreach ($newValues as $fieldName => $value) {
                 $query->set($fieldName, $query->createNamedParameter($value));
             }
             $query->where($query->expr()->eq('id', $query->createNamedParameter($subscriptionId)))
-                ->execute();
+                  ->execute();
 
             return true;
             }
@@ -1683,8 +1676,8 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     {
         $query = $this->db->getQueryBuilder();
         $query->delete('calendarsubscriptions')
-            ->where($query->expr()->eq('id', $query->createNamedParameter($subscriptionId)))
-            ->execute();
+              ->where($query->expr()->eq('id', $query->createNamedParameter($subscriptionId)))
+              ->execute();
     }
 
     /**
@@ -1774,9 +1767,9 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
     {
         $query = $this->db->getQueryBuilder();
         $query->delete('schedulingobjects')
-            ->where($query->expr()->eq('principaluri', $query->createNamedParameter($principalUri)))
-            ->andWhere($query->expr()->eq('uri', $query->createNamedParameter($objectUri)))
-            ->execute();
+              ->where($query->expr()->eq('principaluri', $query->createNamedParameter($principalUri)))
+              ->andWhere($query->expr()->eq('uri', $query->createNamedParameter($objectUri)))
+              ->execute();
     }
 
     /**
