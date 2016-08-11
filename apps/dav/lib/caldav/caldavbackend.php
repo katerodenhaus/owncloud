@@ -179,7 +179,10 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
             $calendar = [
                 'id'                                                          => $row['id'],
                 'uri'                                                         => $row['uri'],
-                'principaluri'                                                => $this->convertPrincipal($row['principaluri'], false),
+                'principaluri'                                                => $this->convertPrincipal(
+                    $row['principaluri'],
+                    false
+                ),
                 '{' . Plugin::NS_CALENDARSERVER . '}getctag'                  => 'http://sabre.io/ns/sync/'
                     . ($row['synctoken'] ? $row['synctoken'] : '0'),
                 '{http://sabredav.org/ns}sync-token'                          => $row['synctoken'] ? $row['synctoken'] : '0',
@@ -239,8 +242,12 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
                 'principaluri'                                                      => $principalUri,
                 '{' . Plugin::NS_CALENDARSERVER . '}getctag'                        => 'http://sabre.io/ns/sync/' . ($row['synctoken'] ? $row['synctoken'] : '0'),
                 '{http://sabredav.org/ns}sync-token'                                => $row['synctoken'] ? $row['synctoken'] : '0',
-                '{' . Plugin::NS_CALDAV . '}supported-calendar-component-set'       => new SupportedCalendarComponentSet($components),
-                '{' . Plugin::NS_CALDAV . '}schedule-calendar-transp'               => new ScheduleCalendarTransp($row['transparent'] ? 'transparent' : 'opaque'),
+                '{' . Plugin::NS_CALDAV . '}supported-calendar-component-set'       => new SupportedCalendarComponentSet(
+                    $components
+                ),
+                '{' . Plugin::NS_CALDAV . '}schedule-calendar-transp'               => new ScheduleCalendarTransp(
+                    $row['transparent'] ? 'transparent' : 'opaque'
+                ),
                 '{' . \OCA\DAV\DAV\Sharing\Plugin::NS_OWNCLOUD . '}owner-principal' => $row['principaluri'],
                 '{' . \OCA\DAV\DAV\Sharing\Plugin::NS_OWNCLOUD . '}read-only'       => (int)$row['access'] === Backend::ACCESS_READ,
             ];
