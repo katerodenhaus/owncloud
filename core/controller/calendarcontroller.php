@@ -165,6 +165,7 @@ class CalendarController extends Controller
                 // Is this recurring or not?
                 if (count($event['occurrences']) === 0) {
                     $return_events[] = [
+                        'title'    => $event['eventTitle'],
                         'start'    => $event['firstOccurence'],
                         'end'      => $event['lastOccurence'],
                         'timezone' => $event['timezone']
@@ -172,6 +173,7 @@ class CalendarController extends Controller
                 } else {
                     foreach ($event['occurrences'] as $occurrence) {
                         $return_events[] = [
+                            'title'    => $event['eventTitle'],
                             'start'    => $occurrence['start']->getTimestamp(),
                             'end'      => $occurrence['end']->getTimestamp(),
                             'timezone' => $occurrence['start']->getTimezone()->getName()
