@@ -52,7 +52,7 @@ $application->registerRoutes(
             ],
             [
                 'name' => 'calendar#getUserEvents',
-                'url'  => '/v1/calendar/user/{user}/events/{range}',
+                'url'  => '/v1/calendar/user/{user}/events/{past}',
                 'verb' => 'GET'
             ],
             [
