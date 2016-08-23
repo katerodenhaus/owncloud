@@ -28,6 +28,8 @@ class CalendarController extends Controller
      */
     private $calDavBackend;
 
+    private $calendar;
+
     /**
      * @param string   $appName Application name
      * @param IRequest $request an instance of the request
@@ -166,6 +168,7 @@ class CalendarController extends Controller
                 if (count($event['occurrences']) === 0) {
                     $return_events[] = [
                         'title'    => $event['eventTitle'],
+                        'url'      => $event['url'],
                         'start'    => $event['firstOccurence'],
                         'end'      => $event['lastOccurence'],
                         'timezone' => $event['timezone']
@@ -174,6 +177,7 @@ class CalendarController extends Controller
                     foreach ($event['occurrences'] as $occurrence) {
                         $return_events[] = [
                             'title'    => $event['eventTitle'],
+                            'url'      => $event['url'],
                             'start'    => $occurrence['start']->getTimestamp(),
                             'end'      => $occurrence['end']->getTimestamp(),
                             'timezone' => $occurrence['start']->getTimezone()->getName()
@@ -313,6 +317,7 @@ class CalendarController extends Controller
      */
     public function bookUserEvent($user, $calendar, $start, $end)
     {
+        $this->calendar = $calendar;
         if (!$this->ensureUserExists($user)) {
             $return['error']   = "Could not create user: $user";
             $return['success'] = false;
@@ -415,7 +420,7 @@ class CalendarController extends Controller
 
         // Other required fields
         $vEvent->{'UID'}     = $this->getUniqueID();
-        $vEvent->{'SUMMARY'} = 'Scheduled CMR';
+        $vEvent->{'SUMMARY'} = $this->calendar === 'Unavailable' ? 'Unavailable' : 'Scheduled CMR';
         $vEvent->{'TRANSP'}  = 'TRANSPARENT';
         $vEvent->{'URL'}     = $link;
         $vCal->add($vEvent);

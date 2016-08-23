@@ -719,6 +719,7 @@ class CalDavBackend extends AbstractBackend implements SyncSupport, Subscription
             'lastOccurence'  => $lastOccurence,
             'uid'            => $uid,
             'eventTitle'     => array_values($component->select('SUMMARY'))[0]->getValue(),
+            'url'            => array_values($component->select('URL')) ? array_values($component->select('URL'))[0]->getValue() : '',
             'timezone'       => $timezone
         ];
     }
