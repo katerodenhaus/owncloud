@@ -167,20 +167,28 @@ class CalendarController extends Controller
                 // Is this recurring or not?
                 if (count($event['occurrences']) === 0) {
                     $return_events[] = [
-                        'title'    => $event['eventTitle'],
-                        'url'      => $event['url'],
-                        'start'    => $event['firstOccurence'],
-                        'end'      => $event['lastOccurence'],
-                        'timezone' => $event['timezone']
+                        'calendarId' => $calendar['id'],
+                        'etag'       => $event['etag'],
+                        'uid'        => $event['uid'],
+                        'uri'        => $event['uri'],
+                        'title'      => $event['eventTitle'],
+                        'url'        => $event['url'],
+                        'start'      => $event['firstOccurence'],
+                        'end'        => $event['lastOccurence'],
+                        'timezone'   => $event['timezone']
                     ];
                 } else {
                     foreach ($event['occurrences'] as $occurrence) {
                         $return_events[] = [
-                            'title'    => $event['eventTitle'],
-                            'url'      => $event['url'],
-                            'start'    => $occurrence['start']->getTimestamp(),
-                            'end'      => $occurrence['end']->getTimestamp(),
-                            'timezone' => $occurrence['start']->getTimezone()->getName()
+                            'calendarId' => $calendar['id'],
+                            'title'      => $event['eventTitle'],
+                            'etag'       => $event['etag'],
+                            'uid'        => $event['uid'],
+                            'uri'        => $event['uri'],
+                            'url'        => $event['url'],
+                            'start'      => $occurrence['start']->getTimestamp(),
+                            'end'        => $occurrence['end']->getTimestamp(),
+                            'timezone'   => $occurrence['start']->getTimezone()->getName()
                         ];
                     }
                 }
@@ -268,6 +276,33 @@ class CalendarController extends Controller
                 $name
             );
             $return['success']   = true;
+        } catch (Exception $e) {
+            $return['success'] = false;
+        }
+
+        return new JSONResponse($return);
+    }
+
+    /**
+     * Gets all calendars that a user has
+     *
+     * @param int    $calendarId The calendar ID that the event is on
+     * @param string $eventUri   The event URI of the event object
+     *
+     * @return JSONResponse
+     *
+     * @PublicPage
+     * @NoAdminRequire
+     * @NoCSRFRequired
+     */
+    public function deleteEvent($calendarId, $eventUri)
+    {
+        try {
+            $this->getCalDavBackend()->deleteCalendarObject(
+                $calendarId,
+                $eventUri
+            );
+            $return['success'] = true;
         } catch (Exception $e) {
             $return['success'] = false;
         }
