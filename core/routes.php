@@ -68,6 +68,10 @@ $application->registerRoutes(
                 'name' => 'calendar#getCalendarEventObjectByUid',
                 'url'  => '/v1/calendar/event/{uid}', 'verb' => 'GET'
             ],
+            [
+                'name' => 'calendar#deleteEvent',
+                'url'  => '/v1/calendar/calendar/{calendarId}/event/{eventUri}', 'verb' => 'DELETE'
+            ],
         ]
     ]
 );
