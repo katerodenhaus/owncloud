@@ -72,6 +72,10 @@ $application->registerRoutes(
                 'name' => 'calendar#deleteEvent',
                 'url'  => '/v1/calendar/calendar/{calendarId}/event/{eventUri}', 'verb' => 'DELETE'
             ],
+            [
+                'name' => 'calendar#updateEvent',
+                'url'  => '/v1/calendar/calendar/{calendarId}/event/{eventUri}', 'verb' => 'POST'
+            ],
         ]
     ]
 );

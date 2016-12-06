@@ -292,7 +292,7 @@ class CalendarController extends Controller
      * @return JSONResponse
      *
      * @PublicPage
-     * @NoAdminRequire
+     * @NoAdminRequired
      * @NoCSRFRequired
      */
     public function deleteEvent($calendarId, $eventUri)
@@ -411,6 +411,48 @@ class CalendarController extends Controller
             $return['success'] = false;
         } catch (Exception\BadRequest $e) {
             $return['error']   = 'Could not create event: ' . $e->getMessage();
+            $return['success'] = false;
+        }
+
+        return new JSONResponse($return);
+    }
+
+    /**
+     * Updates an event with the given data
+     *
+     * @param int    $calendarId The calendar ID that the event is on
+     * @param string $eventUri   The event URI of the event object
+     *
+     * @return JSONResponse
+     *
+     * @PublicPage
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function updateEvent($calendarId, $eventUri) {
+        $params = $this->request->getParams();
+
+        // First, get the calendar object
+        $event = $this->getCalDavBackend()->getCalendarObjectByUri($eventUri);
+
+        if (isset($params['end_time']) && is_numeric($params['end_time'])) {
+            $event['calendardata']['lastOccurence'] = $params['end_time'];
+        }
+
+        try {
+            $event = $this->getCalDavBackend()->updateCalendarObject(
+                $calendarId,
+                $eventUri,
+                $this->generateCalendarData(
+                    $event['calendardata']['firstOccurence'],
+                    $event['calendardata']['lastOccurence'],
+                    $event['calendardata']['url']
+                )
+            );
+
+            $return['success'] = true;
+            $return['event'] = $event;
+        } catch (Exception\BadRequest $e) {
             $return['success'] = false;
         }
 
